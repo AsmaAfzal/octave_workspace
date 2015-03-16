@@ -34,55 +34,62 @@
 ## This function provides a MATLAB compatible interface for 'quadprog' 
 ## It is a wrapper around Octave's 'qp' function.
 ## The notation for quadprog in MATLAB is different from qp in Octave.
-##
+## @end deftypefn
 
-function varargout = quadprog(H,f, varargin)
+function varargout = quadprog (varargin)
 
-   if(nargin<2)
-        error ("quadprog: Input should be at least two arguments");
-   endif
+  warning ("quadprog uses Octaves qp function");
 
-   if(nargin>10)
-        error ("quadprog: Too many input arguments");
-   endif
+  nargs = nargin ();
+  outargs = nargout();
 
-   if(nargout>5)
-        error ("quadprog: Too many output arguments");
-   endif   
+  if (nargs < 2 || nargs == 3 || nargs == 5 || nargs > 10 || outargs > 5)
+    print_usage();
+  endif
 
-   warning ("quadprog uses Octaves qp function");
+  ## one argument more than quadprog has, this is for unused ALB of qp
+  in_args = cat (2, varargin, cell (1, 11 - nargs)); 
 
-  if(nargin==2)
-    [x, obj, INFO, lambda]=  qp([],H,f);
-  elseif(nargin==3)
-    error("The number of rows in A must be the same as the length of b")
-  elseif(nargin==4)
-   [x, obj, INFO, lambda]=  qp([],H,f,[],[],[],[],[],varargin{1},varargin{2});
-  elseif(nargin==5)
-   [x, obj, INFO, lambda]=  qp([],H,f,varargin{3},[],[],[],[],varargin{1},varargin{2});
-  elseif(nargin==6)
-   [x, obj, INFO, lambda]=  qp([],H,f,varargin{3},varargin{4},[],[],[],varargin{1},varargin{2});
-  elseif(nargin==7)
-   [x, obj, INFO, lambda]=  qp([],H,f,varargin{3},varargin{4},varargin{5},[],[],varargin{1},varargin{2});
-  elseif(nargin==8)
-   [x, obj, INFO, lambda]=  qp([],H,f,varargin{3},varargin{4},varargin{5},varargin{6},[],varargin{1},varargin{2});
-  elseif(nargin==9)
-   [x, obj, INFO, lambda]=  qp(varargin{7},H,f,varargin{3},varargin{4},varargin{5},varargin{6},[],varargin{1},varargin{2});
+  ## do the argument mapping
+  qp_args = in_args([9, 1, 2, 5, 6, 7, 8, 11, 3, 4, 10]);
+
+  ## remove inequality constraint arguments if empty
+  if (isempty (qp_args{10}))
+    qp_args([8:11]) = [];
+  elseif (isstruct (varargin{end}))
+    qp_args(11) = varargin{end};
   else
-   [x, obj, INFO, lambda]=  qp(varargin{7},H,f,varargin{3},varargin{4},varargin{5},varargin{6},[],varargin{1},varargin{2},varargin{8});
+    qp_args(11) = struct();
   endif
   
-   varargout{1}=x;
+  [x, obj, INFO, lambda] =  qp (qp_args{:});
+
+  varargout{1} = x;
+
+  if (outargs >= 2)
+    varargout{2} = obj;
+  endif
  
-   if (nargout==2)
-    varargout{2}=obj;
-   elseif (nargout==3)
-    varargout{2}=obj;
-    varargout{3}=INFO;
-   elseif (nargout==4)
-    varargout{2}=obj;
-    varargout{3}=INFO;
-    varargout{4}=lambda;
-   endif
-    
+  if (outargs >= 3)
+    if (INFO.info == 0)
+      varargout{3} = 1;
+    elseif (INFO.info == 1)
+      varargout{3} = -6;
+    elseif (INFO.info == 2)
+      varargout{3} = -3;
+    elseif (INFO.info == 3)
+      varargout{3} = 0;
+    else
+      varargout{3} = -2;
+    endif
+  endif
+   
+  if (outargs >= 4)
+    varargout{4}.iterations = INFO.solveiter;
+  endif
+
+  if (outargs >= 5)
+    varargout{5} = lambda;
+  endif
+
 endfunction
