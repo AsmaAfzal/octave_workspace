@@ -13,6 +13,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Octave; see the file COPYING. If not, see
 ## <http://www.gnu.org/licenses/>.
+
 ## -*- texinfo -*-
 ## @deftypefn {Function File} {} lsqlin (@var{C}, @var{d})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b})
@@ -24,7 +25,7 @@
 ## Solve the linear least squares program
 ## @example
 ## @group
-## min 0.5 norm (C*x - d)^2
+## min 0.5 EuclidianNorm(C*x - d)
 ## x
 ## @end group
 ## @end example
@@ -53,10 +54,10 @@
 ## Position of minimum.
 ##
 ## @item resnorm
-## Scalar value of objective as norm(C*x-d)^2.
+## Scalar value of objective as EuclidianNorm(C*x - d).
 ##
 ## @item residual
-## Vector of solution residuals as C*x-d.
+## Vector of solution residuals C*x - d.
 ##
 ## @item exitflag
 ## Status of solution:
@@ -79,11 +80,21 @@
 ## @end table
 ##
 ## This function calls Octave's @code{qp} function internally.
+##
+## @c Will be cut out in optims info file and replaced with the same
+## @c refernces explicitely there, since references to core Octave
+## @c functions are not automatically transformed from here to there.
+## @c BEGIN_CUT_TEXINFO
+## @seealso{qp, quadprog}
+## @c END_CUT_TEXINFO
 ## @end deftypefn
+
 ## PKG_ADD: __all_opts__ ("lsqlin");
+
 function varargout = lsqlin (varargin)
 
   nargs = nargin ();
+
   n_out = nargout ();
   varargout = cell (1, n_out);
 
@@ -104,8 +115,9 @@ function varargout = lsqlin (varargin)
   endif
 
   ## do the argument mapping
-  in_args{2}=-in_args{1}'*in_args{2};
-  in_args{1}=in_args{1}'*in_args{1};
+  arg1_ct = in_args{1}';
+  in_args{2} = real (- arg1_ct * in_args{2});
+  in_args{1} = arg1_ct * in_args{1};
   qp_args = in_args([9, 1, 2, 5, 6, 7, 8, 11, 3, 4, 10]);
 
   ## remove inequality constraint arguments if empty
@@ -113,17 +125,23 @@ function varargout = lsqlin (varargin)
     qp_args([8:11]) = [];
   endif
 
-  qp_n_out = max (1, min (n_out, 3));
+  if (n_out > 2)
+    tn_out = n_out - 1;
+  else
+    tn_out = n_out;
+  endif
+  qp_n_out = max (1, min (tn_out, 3));
   qp_out = cell (1, qp_n_out);
   [qp_out{:}] = qp (qp_args{:});
+
   varargout{1} = qp_out{1};
 
   if (n_out >= 2)
-    varargout{2} = 2*(qp_out{2}+0.5*varargin{2}'*varargin{2});
+    varargout{2} = 2 * (qp_out{2} + 0.5 * varargin{2}' * varargin{2});
   endif
 
   if (n_out >= 3)
-    varargout{3} = varargin{1}*varargout{1}-varargin{2};
+    varargout{3} = varargin{1} * varargout{1} - varargin{2};
   endif
 
   if (n_out >= 4)
@@ -134,6 +152,9 @@ function varargout = lsqlin (varargin)
       varargout{4} = 0;
     case 6
       varargout{4} = -2;
+    otherwise
+      error ("internal error: unexpected qp status of solution '%i'",
+             qp_out{3}.info);
     endswitch
   endif
 
