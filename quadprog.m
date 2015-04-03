@@ -150,3 +150,17 @@ function varargout = quadprog (varargin)
   endif
 
 endfunction
+
+
+%!test
+%!shared H,f,A,b,l,x
+%! H= diag([1; 0]);
+%! f = [3; 4];
+%! A= [-1 -3; 2 5; 3 4];
+%! b = [-15; 100; 80];
+%! l= zeros(2,1);
+%! [x,fval,exitflag,output] = quadprog(H,f,A,b,[],[],l,[])
+%! assert(x,[0;5])
+%! assert(fval,20)
+%! assert(exitflag,1)
+%! assert(output.iterations,1)
