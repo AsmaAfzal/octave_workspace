@@ -94,17 +94,17 @@ function varargout = lsqnonlin (varargin)
     print_usage();
   endif
   
-  in_args = varargin(1,1:2); 
-  
+  in_args{1} = varargin{1};
+  in_args{2} = varargin{2}(:);
+  settings = struct();
   if (nargs > 2)
-    n_in = 3;  
     ## check if the third argument is lower bound
     if (! (isstruct (varargin{3})))
-        settings = optimset ("lbound",varargin{3});
+        settings = optimset ("lbound",varargin{3}(:));
       if (nargs > 3)
         ## check if the fourth argument is upper bound  
         if (! (isstruct (varargin{4})))
-          settings = optimset (settings,"ubound",varargin{4});          
+          settings = optimset (settings,"ubound",varargin{4}(:));          
           if (nargs > 4)
             ## check if the fifth argument is options struct
             if (isstruct (varargin{5}))
@@ -127,7 +127,7 @@ function varargout = lsqnonlin (varargin)
     in_args(3) = settings;
   endif
 
-  n_out = max (1, min (out_args, 4)); 
+  n_out = max (1, min (out_args, 5)); 
    
   if (n_out > 2)
     n_out = n_out - 1;
@@ -153,5 +153,17 @@ function varargout = lsqnonlin (varargin)
     varargout{4} = residmin_out{3};
   endif
   
+  if (out_args >= 5)
+    varargout{5} = residmin_out{4};
+  endif
 
+  if (out_args >= 5)
+    varargout{5} = residmin_out{4};
+  endif
+  
+  if (out_args >= 6)
+    info = residmin_stat(in_args{1},in_args{2},optimset(settings, "ret_dfdp", true));
+    varargout{6} = sparse(info.dfdp);
+  endif
+  
 endfunction
