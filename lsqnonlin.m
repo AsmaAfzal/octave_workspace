@@ -162,8 +162,8 @@ function varargout = lsqnonlin (varargin)
   endif
   
   if (out_args >= 6)
-    info = residmin_stat(in_args{1},in_args{2},optimset(settings, "ret_dfdp", true));
-    varargout{6} = sparse(info.dfdp);
+    info = residmin_stat (in_args{1},in_args{2},optimset (settings, "ret_dfdp", true));
+    varargout{6} = sparse (info.dfdp);
   endif
   
 endfunction
