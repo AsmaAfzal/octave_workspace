@@ -100,23 +100,21 @@ function varargout = lsqnonlin (varargin)
   if (nargs > 2)
     ## check if the third argument is lower bound
     if (! (isstruct (varargin{3})))
-        settings = optimset ("lbound",varargin{3}(:));
+        settings = optimset ("lbound", varargin{3}(:));
       if (nargs > 3)
         ## check if the fourth argument is upper bound  
         if (! (isstruct (varargin{4})))
-          settings = optimset (settings,"ubound",varargin{4}(:));          
+          settings = optimset (settings, "ubound", varargin{4}(:));          
           if (nargs > 4)
             ## check if the fifth argument is options struct
             if (isstruct (varargin{5}))
-              settings = optimset (settings,varargin{5});
+              settings = optimset (settings, varargin{5});
             else
               print_usage();
             endif
           endif
-        elseif (nargs == 4)
-          settings = optimset (settings,varargin{4});
         else
-          print_usage();
+          print_usage(); ## Input ub also required if lb given
         endif     
       endif  
     elseif (nargs == 3)
@@ -158,12 +156,17 @@ function varargout = lsqnonlin (varargin)
   endif
 
   if (out_args >= 5)
-    varargout{5} = residmin_out{4};
+    outp = residmin_out{4};
+    outp = rmfield(outp, 'lambda');
+    varargout{5} = outp;
   endif
   
   if (out_args >= 6)
-    info = residmin_stat (in_args{1},in_args{2},optimset (settings, "ret_dfdp", true));
-    varargout{6} = sparse (info.dfdp);
+    varargout{6} = residmin_out{4}.lambda;
+  endif
+  
+  if (out_args >= 7)
+     varargout{7} = sparse (jacobs (residmin_out{1}, in_args{1}));
   endif
   
 endfunction
