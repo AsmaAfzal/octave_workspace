@@ -61,15 +61,6 @@
 ## @item 3
 ## Change in the residual was less than the specified tolerance.
 ##
-## @item 4
-## Magnitude of search direction was smaller than the specified tolerance.
-## 
-## @item -4
-## Line search could not sufficiently decrease the residual along the current search direction.
-##
-## @item -2
-## The problem is infeasible as bounds lb and ub are inconsistent.
-##
 ## @item -1
 ## Output function terminated the algorithm.
 ## @end table
