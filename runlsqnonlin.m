@@ -55,11 +55,11 @@ clear all
 
 %*******Eg.2
 
-%t = [0 .3 .8 1.1 1.6 2.3]';
-%y = [.82 .72 .63 .60 .55 .50]';
-%yhat = @(c,t) c(1) + c(2)*exp(-t);
-%opt = optimset('TolFun',1e-100)
-%[c,res,resid,flag,out,lamb,jacob] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0.2 0.6],[],opt)
+t = [0 .3 .8 1.1 1.6 2.3]';
+y = [.82 .72 .63 .60 .55 .50]';
+yhat = @(c,t) c(1) + c(2)*exp(-t);
+opt = optimset('TolFun',1e-100)
+[c,res,resid,flag,out,lamb,jacob] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0.2 0.6],[],opt)
 
 %*****user specified jacobian*******
 %t = [0 .3 .8 1.1 1.6 2.3]';
@@ -71,12 +71,12 @@ clear all
 
 %*****Complex Input******
 
-N = 100; % number of observations
-v0 = [2;3+4i;-.5+.4i]; % coefficient vector
-xdata = -log(rand(N,1)); % exponentially distributed
-noisedata = randn(N,1).*exp((1i*randn(N,1))); % complex noise
-cplxydata = v0(1) + v0(2).*exp(v0(3)*xdata) + noisedata;
-objfcn = @(v)v(1)+v(2)*exp(v(3)*xdata) - cplxydata;
-x0 = (1+1i)*[1;1;1]; % arbitrary initial guess
-[vest,resnorm,exitflag,output] = nonlin_residmin(objfcn,real(x0))
+%N = 100; % number of observations
+%v0 = [2;3+4i;-.5+.4i]; % coefficient vector
+%xdata = -log(rand(N,1)); % exponentially distributed
+%noisedata = randn(N,1).*exp((1i*randn(N,1))); % complex noise
+%cplxydata = v0(1) + v0(2).*exp(v0(3)*xdata) + noisedata;
+%objfcn = @(v)v(1)+v(2)*exp(v(3)*xdata) - cplxydata;
+%x0 = (1+1i)*[1;1;1]; % arbitrary initial guess
+%[vest,resnorm,exitflag,output] = nonlin_residmin(objfcn,real(x0))
 

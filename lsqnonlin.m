@@ -23,8 +23,8 @@
 ## Solve nonlinear least-squares (nonlinear data-fitting) problems
 ## @example
 ## @group
-## min [EuclidianNorm(f(x))] .^ 2
-##  x
+## min sum [EuclidianNorm(f(x))] .^ 2
+##  x   i                  i  
 ## @end group
 ## @end example
 ## 
@@ -86,7 +86,7 @@ function varargout = lsqnonlin (varargin)
   endif
   
   in_args{1} = varargin{1};
-  in_args{2} = varargin{2}(:);
+  in_args{2} = real (varargin{2}(:));
   settings = struct();
   if (nargs > 2)
     ## check if the third argument is lower bound
@@ -120,8 +120,6 @@ function varargout = lsqnonlin (varargin)
    
   if (n_out > 2)
     n_out = n_out - 1;
-  else
-    n_out = n_out;
   endif
   
   residmin_out = cell (1, n_out);
