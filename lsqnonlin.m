@@ -16,7 +16,6 @@
 
 ## -*- texinfo -*-
 ## @deftypefn {Function File} {} lsqnonlin (@var{fun}, @var{x0})
-## @deftypefnx {Function File} {} lsqnonlin (@var{fun}, @var{x0}, @var{lb})
 ## @deftypefnx {Function File} {} lsqnonlin (@var{fun}, @var{x0}, @var{lb}, @var{ub})
 ## @deftypefnx {Function File} {} lsqnonlin (@var{fun}, @var{x0}, @var{lb}, @var{ub}, @var{options})
 ## @deftypefnx {Function File} {[@var{x}, @var{resnorm}, @var{residual}, @var{exitflag}, @var{output}, @var{lambda}, @var{jacobian}] =} lsqnonlin (@dots{})
@@ -81,38 +80,18 @@ function varargout = lsqnonlin (varargin)
   out_args = nargout ();
   varargout = cell (1, out_args);
   
-  if (nargs < 2 || nargs > 5)
-    print_usage();
+  if (nargs < 2 || nargs==3 || nargs > 5)
+    print_usage ();
   endif
   
   in_args{1} = varargin{1};
   in_args{2} = real (varargin{2}(:));
-  settings = struct();
-  if (nargs > 2)
-    ## check if the third argument is lower bound
-    if (! (isstruct (varargin{3})))
-        settings = optimset ("lbound", varargin{3}(:));
-      if (nargs > 3)
-        ## check if the fourth argument is upper bound  
-        if (! (isstruct (varargin{4})))
-          settings = optimset (settings, "ubound", varargin{4}(:));          
-          if (nargs > 4)
-            ## check if the fifth argument is options struct
-            if (isstruct (varargin{5}))
-              settings = optimset (settings, varargin{5});
-            else
-              print_usage();
-            endif
-          endif
-        else
-          print_usage(); ## Input ub also required if lb given
-        endif     
-      endif  
-    elseif (nargs == 3)
-        settings = varargin{3};
-    else
-      print_usage();
-    endif
+  
+  if (nargs >= 4)
+    settings = optimset ("lbound", varargin{3}(:), "ubound", varargin{4}(:));          
+    if (nargs == 5)
+      settings = optimset (settings, varargin{5});
+    endif  
     in_args(3) = settings;
   endif
 

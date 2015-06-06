@@ -14,10 +14,10 @@
 ## along with Octave; see the file COPYING.  If not, see
 ## <http://www.gnu.org/licenses/>.
 ## -*- texinfo -*-
-## @deftypefn {Function File} {} lsqcurvefit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata})
-## @deftypefnx {Function File} {} lsqcurvefit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata}, @var{lb}, @var{ub})
-## @deftypefnx {Function File} {} lsqcurvefit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata}, @var{lb}, @var{ub}, @var{options})
-## @deftypefnx {Function File} {[@var{x}, @var{resnorm}, @var{residual}, @var{exitflag}, @var{output}, @var{lambda}, @var{jacobian}] =} lsqcurvefit (@dots{})
+## @deftypefn {Function File} {} nlinfit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata})
+## @deftypefnx {Function File} {} nlinfit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata}, @var{lb}, @var{ub})
+## @deftypefnx {Function File} {} nlinfit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata}, @var{lb}, @var{ub}, @var{options})
+## @deftypefnx {Function File} {[@var{x}, @var{resnorm}, @var{residual}, @var{exitflag}, @var{output}, @var{lambda}, @var{jacobian}] =} nlinfit (@dots{})
 ## Solve nonlinear least-squares (nonlinear data-fitting) problems
 ## @example
 ## @group
@@ -71,9 +71,9 @@
 ## This function calls Octave's @code{nonlin_curvefit} function internally.
 ## @end deftypefn
 
-## PKG_ADD: __all_opts__ ("lsqcurvefit");
+## PKG_ADD: __all_opts__ ("nlinfit");
 
-function varargout = lsqcurvefit (varargin)
+function varargout = nlinfit (varargin)
 
   nargs = nargin ();
   out_args = nargout ();
