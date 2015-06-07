@@ -24,7 +24,7 @@ lb = [0.3;0.3];
 ub = [0.5;0.5];
 %[x,resnorm,residual] = lsqnonlin(func,x0,lb,[],struct())%empty upper bounds
 %[x,resnorm,residual] = lsqnonlin(func,x0,lb,ub,settings)%all 5 inputs
-[x,resnorm,residual] = lsqnonlin(func,x0,lb,[],[])
+[x,resnorm,residual] = lsqnonlin(func,x0,lb,[])
 
 %****check row/col input
 %x0 = [0.3 0.4];
