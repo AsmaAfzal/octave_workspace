@@ -121,10 +121,6 @@ function varargout = lsqcurvefit (varargin)
   if (out_args >= 4)
     varargout{4} = curvefit_out{3};
   endif
-  
-  if (out_args >= 5)
-    varargout{5} = curvefit_out{4};
-  endif
 
   if (out_args >= 5)
     outp = curvefit_out{4};

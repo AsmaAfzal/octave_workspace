@@ -118,10 +118,6 @@ function varargout = lsqnonlin (varargin)
   if (out_args >= 4)
     varargout{4} = residmin_out{3};
   endif
-  
-  if (out_args >= 5)
-    varargout{5} = residmin_out{4};
-  endif
 
   if (out_args >= 5)
     outp = residmin_out{4};
