@@ -13,6 +13,7 @@
 ## You should have received a copy of the GNU General Public License
 ## along with Octave; see the file COPYING.  If not, see
 ## <http://www.gnu.org/licenses/>.
+
 ## -*- texinfo -*-
 ## @deftypefn {Function File} {} lsqcurvefit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata})
 ## @deftypefnx {Function File} {} lsqcurvefit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata}, @var{lb}, @var{ub})
@@ -22,7 +23,7 @@
 ## @example
 ## @group
 ## min sum [EuclidianNorm (f(x,xdata(i)) -ydata(i) )] .^ 2
-##  x   i
+##  x     i
 ## @end group
 ## @end example
 ## 
@@ -65,7 +66,7 @@
 ##
 ## @item output
 ## Structure with additional information, currently the only field is
-## @code{iteratios}, the number of used iterations.
+## @code{iterations}, the number of used iterations.
 ## @end table
 ##
 ## This function calls Octave's @code{nonlin_curvefit} function internally.

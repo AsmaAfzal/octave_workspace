@@ -22,8 +22,8 @@
 ## Solve nonlinear least-squares (nonlinear data-fitting) problems
 ## @example
 ## @group
-## min sum [EuclidianNorm(f(x))] .^ 2
-##  x   i                  i  
+## min [EuclidianNorm(f(x))] .^ 2
+##  x   
 ## @end group
 ## @end example
 ## 
@@ -66,7 +66,7 @@
 ##
 ## @item output
 ## Structure with additional information, currently the only field is
-## @code{iteratios}, the number of used iterations.
+## @code{iterations}, the number of used iterations.
 ## @end table
 ##
 ## This function calls Octave's @code{nonlin_residmin} function internally.
