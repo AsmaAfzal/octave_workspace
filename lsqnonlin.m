@@ -125,7 +125,7 @@ function varargout = lsqnonlin (varargin)
 
   if (out_args >= 5)
     outp = residmin_out{4};
-    outp = rmfield(outp, 'lambda');
+    outp = rmfield (outp, 'lambda');
     varargout{5} = outp;
   endif
   

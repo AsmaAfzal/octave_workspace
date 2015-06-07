@@ -93,7 +93,7 @@ function varargout = lsqcurvefit (varargin)
     if (nargs == 7)
       settings = optimset (settings, varargin{7});
     endif
-    in_args(5) = settings;
+    in_args{5} = settings;
   endif
   
   n_out = max (1, min (out_args, 5)); 
@@ -106,7 +106,7 @@ function varargout = lsqcurvefit (varargin)
 
   [curvefit_out{:}] =  nonlin_curvefit (in_args{:});
   
-  [row, col] = size(varargin{2});
+  [row, col] = size (in_args{2});
   varargout{1} = reshape (curvefit_out{1}, row, col);
 
   if (out_args >= 2)
@@ -127,7 +127,7 @@ function varargout = lsqcurvefit (varargin)
 
   if (out_args >= 5)
     outp = curvefit_out{4};
-    outp = rmfield(outp, 'lambda');
+    outp = rmfield (outp, 'lambda');
     varargout{5} = outp;
   endif
   
@@ -136,7 +136,8 @@ function varargout = lsqcurvefit (varargin)
   endif
   
   if (out_args >= 7)
-     varargout{7} = sparse (jacobs (curvefit_out{1}, @(p) in_args{1}(p,in_args{3})));
+    fun = @(x)  in_args{1}(x, in_args{3})
+    varargout{7} = sparse (jacobs (curvefit_out{1}, fun));
   endif
   
 endfunction
