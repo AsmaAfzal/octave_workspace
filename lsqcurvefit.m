@@ -99,9 +99,8 @@ function varargout = lsqcurvefit (varargin)
     in_args{5} = settings;
   endif
   
-  settings = struct ();
   if (nargs >= 6)
-    settings = optimset ("lbound", varargin{5}(:), "ubound", varargin{6}(:));       
+    settings = optimset (settings, "lbound", varargin{5}(:), "ubound", varargin{6}(:));       
     if (nargs == 7)
       settings = optimset (settings, varargin{7});
     endif
