@@ -97,8 +97,12 @@ function varargout = lsqcurvefit (varargin)
     settings = optimset ("lbound", varargin{5}(:), "ubound", varargin{6}(:));       
     if (nargs == 7)
       settings = optimset (settings, varargin{7});
-      if (strcmp (optimget (settings, "Jacobian"), "on") && nargout (modelfun) == 2)
-        settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
+      if (strcmp (optimget (settings, "Jacobian"), "on")) 
+        if (nargout (modelfun) == 2)
+          settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
+        else
+          error('Cannot compute user-specified Jacobian. Provide a second output argument to modelfun')
+        endif 
       endif
     endif
     in_args{5} = settings;
@@ -147,5 +151,5 @@ function varargout = lsqcurvefit (varargin)
 endfunction
 
 function Jacob = computeJacob (modelfun, p0, xdata)
-  [fun, Jacob] = modelfun (p0, xdata);
+  [fun, Jacob] = modelfun (p0, xdata)
 endfunction

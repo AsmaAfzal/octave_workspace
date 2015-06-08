@@ -96,8 +96,12 @@ function varargout = lsqnonlin (varargin)
     settings = optimset ("lbound", varargin{3}(:), "ubound", varargin{4}(:));          
     if (nargs == 5)
       settings = optimset (settings, varargin{5});
-      if (strcmp (optimget (settings, "Jacobian"), "on") && (nargout (modelfun) == 2))
-        settings = optimset (settings, "dfdp", @(p) computeJacob (modelfun, p));
+      if (strcmp (optimget (settings, "Jacobian"), "on")) 
+        if (nargout (modelfun) == 2)
+          settings = optimset (settings, "dfdp", @(p) computeJacob (modelfun, p));
+        else
+          error('Cannot compute user-specified Jacobian. Provide a second output argument to modelfun')
+        endif  
       endif
     endif
     in_args{3} = settings;
