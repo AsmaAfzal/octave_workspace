@@ -1,8 +1,8 @@
 clc
 clear all
-%k = 1:10;
-%func = @(x) 2 + 2*k-exp(k*x(1))-exp(k*x(2));
-%x0 = [0.3; 0.5];                        % Starting guess
+k = 1:10;
+func = @(x) 2 + 2*k-exp(k*x(1))-exp(k*x(2));
+x0 = [0.3; 0.5];                        % Starting guess
 
 %********lsqnonlin==nonlin_residmin*******
 %x = lsqnonlin(func,x0)  
@@ -49,7 +49,7 @@ clear all
 %*******Jacobian*********
 %settings=optimset(settings, "ret_dfdp", true);
 %[x,resnorm,flag,output] = nonlin_residmin(func,x0,settings)
-%[x,resnorm,residual,flag,output,jacobian] = lsqnonlin(func,x0)
+[x,resnorm,residual,flag,output,lambda,jacobian] = lsqnonlin(func,x0)
 
 %info = residmin_stat(func,x0,settings)
 % x = [1:10:100]';
@@ -65,12 +65,12 @@ clear all
 %opts=optimset("dfdp",df);
 %nonlin_residmin(@(p)func(p)-data,p0,opts)
 %*******Eg.2
-
-t = [0 .3 .8 1.1 1.6 2.3]';
-y = [.82 .72 .63 .60 .55 .50]';
-yhat = @(c,t) c(1) + c(2)*exp(-t);
-opt = optimset('TolFun',1e-100)
-[c,res,resid,flag,out,lamb,jacob] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0.2 0.6],[],opt)
+%
+%t = [0 .3 .8 1.1 1.6 2.3]';
+%y = [.82 .72 .63 .60 .55 .50]';
+%yhat = @(c,t) c(1) + c(2)*exp(-t);
+%opt = optimset('TolFun',1e-100)
+%[c,res,resid,flag,out,lamb,jacob] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0.2 0.6],[],opt)
 
 %*****user specified jacobian*******
 %t = [0 .3 .8 1.1 1.6 2.3]';

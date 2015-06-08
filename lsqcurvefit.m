@@ -144,7 +144,7 @@ function varargout = lsqcurvefit (varargin)
   endif
   
   if (out_args >= 7)
-    info = curvefit_stat (modelfun, curvefit_out{1}, in_args{3}, in_args{4}, optimset (settings, "ret_dfdp", true));
+    info = residmin_stat (modelfun, curvefit_out{1}, optimset (settings, "ret_dfdp", true));
     varargout{7} = sparse (info.dfdp);
   endif
   
