@@ -77,9 +77,24 @@
 function varargout = lsqcurvefit (varargin)
 
   nargs = nargin ();
-  out_args = nargout ();
-  varargout = cell (1, out_args);
+  modelfun = varargin{1};
   
+  if (nargin == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
+    p = optimset (
+		  "max_fract_change", [], \
+		  "fract_prec", [], \
+		  "diffp", [], \
+		  "TolFun", stol_default, \
+      "TolX", stol_default, \
+		  "MaxIter", [], \
+		  "Display", "off", \
+ 		  "Jacobian", "off", \
+		  "Algorithm", "lm_svd_feasible", \
+		  "plot_cmd", @ (f) 0, \
+		  "lm_svd_feasible_alt_s", false);
+    return;
+  endif
+
   if (nargs < 4 || nargs==5 || nargs > 7)
     print_usage ();
   endif
@@ -88,7 +103,8 @@ function varargout = lsqcurvefit (varargin)
     error('function does not accept complex inputs. Split into real and imaginary parts')
   endif
   
-  modelfun = varargin{1};
+  out_args = nargout ();
+  varargout = cell (1, out_args);
   in_args{1} = varargin{1};
   in_args{2} = varargin{2}(:);
   in_args(3:4) = varargin(3:4);
@@ -98,11 +114,7 @@ function varargout = lsqcurvefit (varargin)
     if (nargs == 7)
       settings = optimset (settings, varargin{7});
       if (strcmp (optimget (settings, "Jacobian"), "on")) 
-        if (nargout (modelfun) == 2)
           settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
-        else
-          error('Cannot compute user-specified Jacobian. Provide a second output argument to modelfun')
-        endif 
       endif
     endif
     in_args{5} = settings;
@@ -111,7 +123,7 @@ function varargout = lsqcurvefit (varargin)
   n_out = max (1, min (out_args, 5)); 
    
   if (n_out > 2)
-    n_out = n_out - 1;
+    n_out--;
   endif
   
   curvefit_out = cell (1, n_out);
@@ -150,6 +162,6 @@ function varargout = lsqcurvefit (varargin)
   
 endfunction
 
-function Jacob = computeJacob (modelfun, p0, xdata)
-  [fun, Jacob] = modelfun (p0, xdata)
+function Jacob = computeJacob (modelfun, p, xdata)
+  [~, Jacob] = modelfun (p, xdata);
 endfunction

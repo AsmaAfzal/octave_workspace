@@ -77,9 +77,42 @@
 function varargout = lsqnonlin (varargin)
 
   nargs = nargin ();
-  out_args = nargout ();
-  varargout = cell (1, out_args);
+  modelfun = varargin{1};
   
+  if (nargin == 1 && ischar (f) && strcmp (f, "defaults"))
+    p = optimset ("param_config", [], \
+		  "param_order", [], \
+		  "param_dims", [], \
+		  "f_inequc_pstruct", false, \
+		  "f_equc_pstruct", false, \
+		  "f_pstruct", false, \
+		  "df_inequc_pstruct", false, \
+		  "df_equc_pstruct", false, \
+		  "dfdp_pstruct", false, \
+		  "dfdp", [], \
+		  "cpiv", @ cpiv_bard, \
+		  "max_fract_change", [], \
+		  "fract_prec", [], \
+		  "diffp", [], \
+		  "diff_onesided", [], \
+		  "complex_step_derivative_f", false, \
+		  "complex_step_derivative_inequc", false, \
+		  "complex_step_derivative_equc", false, \
+		  "cstep", cstep_default, \
+		  "fixed", [], \
+		  "inequc", [], \
+		  "equc", [], \
+		  "weights", [], \
+		  "TolFun", stol_default, \
+		  "MaxIter", [], \
+		  "Display", "off", \
+ 		  "Jacobian", "off", \
+		  "Algorithm", "lm_svd_feasible", \
+		  "plot_cmd", @ (f) 0, \
+		  "debug", false, \
+		  "lm_svd_feasible_alt_s", false);
+    return;
+  endif
   if (nargs < 2 || nargs==3 || nargs > 5)
     print_usage ();
   endif
@@ -88,7 +121,8 @@ function varargout = lsqnonlin (varargin)
     error('function does not accept complex inputs. Split into real and imaginary parts')
   endif
   
-  modelfun = varargin{1};
+  out_args = nargout ();
+  varargout = cell (1, out_args);
   in_args{1} = varargin{1};
   in_args{2} = varargin{2}(:);
   
@@ -97,11 +131,7 @@ function varargout = lsqnonlin (varargin)
     if (nargs == 5)
       settings = optimset (settings, varargin{5});
       if (strcmp (optimget (settings, "Jacobian"), "on")) 
-        if (nargout (modelfun) == 2)
           settings = optimset (settings, "dfdp", @(p) computeJacob (modelfun, p));
-        else
-          error('Cannot compute user-specified Jacobian. Provide a second output argument to modelfun')
-        endif  
       endif
     endif
     in_args{3} = settings;
@@ -110,7 +140,7 @@ function varargout = lsqnonlin (varargin)
   n_out = max (1, min (out_args, 5)); 
    
   if (n_out > 2)
-    n_out = n_out - 1;
+    n_out--;
   endif
   
   residmin_out = cell (1, n_out);
@@ -148,6 +178,6 @@ function varargout = lsqnonlin (varargin)
   
 endfunction
 
-function Jacob = computeJacob (modelfun, p0)
-  [fun, Jacob] = modelfun (p0);
+function Jacob = computeJacob (modelfun, p)
+  [~, Jacob] = modelfun (p);
 endfunction
