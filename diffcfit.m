@@ -25,5 +25,5 @@
 function [F,J] = diffcfit (p,x)
  F= p(1)*exp(-p(2)*x);
 %J=[x,p(2)*x];
-J=[exp(-p(2)*x),-p(1)*x.*exp(-p(2)*x)];
+J=[exp(-p(2)*x),-p(1)*x.*exp(-p(2)*x)]
 endfunction

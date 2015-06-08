@@ -92,17 +92,14 @@ function varargout = lsqcurvefit (varargin)
   in_args{1} = varargin{1};
   in_args{2} = varargin{2}(:);
   in_args(3:4) = varargin(3:4);
-  settings = struct ();
-
-  if (nargout (modelfun) == 2)
-    settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
-    in_args{5} = settings;
-  endif
   
   if (nargs >= 6)
-    settings = optimset (settings, "lbound", varargin{5}(:), "ubound", varargin{6}(:));       
+    settings = optimset ("lbound", varargin{5}(:), "ubound", varargin{6}(:));       
     if (nargs == 7)
       settings = optimset (settings, varargin{7});
+      if (strcmp (optimget (settings, "Jacobian"), "on") && nargout (modelfun) == 2)
+        settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
+      endif
     endif
     in_args{5} = settings;
   endif

@@ -91,19 +91,16 @@ function varargout = lsqnonlin (varargin)
   modelfun = varargin{1};
   in_args{1} = varargin{1};
   in_args{2} = varargin{2}(:);
-  settings = struct ();
-
-  if (nargout (modelfun) == 2)
-    settings = optimset ("dfdp", @(p) computeJacob (modelfun, p));
-    in_args{3} = settings;
-  endif
   
   if (nargs >= 4)
-    settings = optimset (settings, "lbound", varargin{3}(:), "ubound", varargin{4}(:));          
+    settings = optimset ("lbound", varargin{3}(:), "ubound", varargin{4}(:));          
     if (nargs == 5)
       settings = optimset (settings, varargin{5});
-    endif  
-    in_args{3} = settings
+      if (strcmp (optimget (settings, "Jacobian"), "on") && (nargout (modelfun) == 2))
+        settings = optimset (settings, "dfdp", @(p) computeJacob (modelfun, p));
+      endif
+    endif
+    in_args{3} = settings;
   endif
 
   n_out = max (1, min (out_args, 5)); 
