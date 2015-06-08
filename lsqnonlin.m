@@ -83,16 +83,27 @@ function varargout = lsqnonlin (varargin)
   if (nargs < 2 || nargs==3 || nargs > 5)
     print_usage ();
   endif
+
+  if (! isreal (varargin{2}))
+    error('function does not accept complex inputs. Split into real and imaginary parts')
+  endif
   
+  modelfun = varargin{1};
   in_args{1} = varargin{1};
-  in_args{2} = real (varargin{2}(:));
+  in_args{2} = varargin{2}(:);
+  settings = struct ();
+
+  if (nargout (modelfun) == 2)
+    settings = optimset ("dfdp", @(p) computeJacob (modelfun, p));
+    in_args{3} = settings;
+  endif
   
   if (nargs >= 4)
-    settings = optimset ("lbound", varargin{3}(:), "ubound", varargin{4}(:));          
+    settings = optimset (settings, "lbound", varargin{3}(:), "ubound", varargin{4}(:));          
     if (nargs == 5)
       settings = optimset (settings, varargin{5});
     endif  
-    in_args(3) = settings;
+    in_args{3} = settings
   endif
 
   n_out = max (1, min (out_args, 5)); 
@@ -130,7 +141,12 @@ function varargout = lsqnonlin (varargin)
   endif
   
   if (out_args >= 7)
-     varargout{7} = sparse (jacobs (residmin_out{1}, in_args{1}));
+    info = residmin_stat (modelfun, residmin_out{1}, optimset (settings, "ret_dfdp", true));
+    varargout{7} = sparse (info.dfdp);
   endif
   
+endfunction
+
+function Jacob = computeJacob (modelfun, p0)
+  [fun, Jacob] = modelfun (p0);
 endfunction

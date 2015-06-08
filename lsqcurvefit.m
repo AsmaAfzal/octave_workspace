@@ -84,10 +84,21 @@ function varargout = lsqcurvefit (varargin)
     print_usage ();
   endif
   
+   if (! isreal (varargin{2}))
+    error('function does not accept complex inputs. Split into real and imaginary parts')
+  endif
+  
+  modelfun = varargin{1};
   in_args{1} = varargin{1};
-  in_args{2} = real (varargin{2}(:))
+  in_args{2} = varargin{2}(:);
   in_args(3:4) = varargin(3:4);
+  settings = struct ();
 
+  if (nargout (modelfun) == 2)
+    settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
+    in_args{5} = settings;
+  endif
+  
   settings = struct ();
   if (nargs >= 6)
     settings = optimset ("lbound", varargin{5}(:), "ubound", varargin{6}(:));       
@@ -133,8 +144,12 @@ function varargout = lsqcurvefit (varargin)
   endif
   
   if (out_args >= 7)
-    fun = @(x)  in_args{1}(x, in_args{3})
-    varargout{7} = sparse (jacobs (curvefit_out{1}, fun));
+    info = curvefit_stat (modelfun, curvefit_out{1}, in_args{3}, in_args{4}, optimset (settings, "ret_dfdp", true));
+    varargout{7} = sparse (info.dfdp);
   endif
   
+endfunction
+
+function Jacob = computeJacob (modelfun, p0, xdata)
+  [fun, Jacob] = modelfun (p0, xdata);
 endfunction

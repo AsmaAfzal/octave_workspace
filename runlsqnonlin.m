@@ -1,8 +1,8 @@
 clc
 clear all
-k = 1:10;
-func = @(x) 2 + 2*k-exp(k*x(1))-exp(k*x(2));
-x0 = [0.3; 0.5];                        % Starting guess
+%k = 1:10;
+%func = @(x) 2 + 2*k-exp(k*x(1))-exp(k*x(2));
+%x0 = [0.3; 0.5];                        % Starting guess
 
 %********lsqnonlin==nonlin_residmin*******
 %x = lsqnonlin(func,x0)  
@@ -20,11 +20,11 @@ x0 = [0.3; 0.5];                        % Starting guess
 %settings = optimset ("lbound",[0.3;0.3])
 %settings = optimset (settings,"ubound",[0.5;0.5])
 %[x,resnorm] = nonlin_residmin(func,x0,settings)
-lb = [0.3;0.3];
-ub = [0.5;0.5];
-%[x,resnorm,residual] = lsqnonlin(func,x0,lb,[],struct())%empty upper bounds
-%[x,resnorm,residual] = lsqnonlin(func,x0,lb,ub,settings)%all 5 inputs
-[x,resnorm,residual] = lsqnonlin(func,x0,lb,[])
+%lb = [0.3;0.3];
+%ub = [0.5;0.5];
+%%[x,resnorm,residual] = lsqnonlin(func,x0,lb,[],struct())%empty upper bounds
+%%[x,resnorm,residual] = lsqnonlin(func,x0,lb,ub,settings)%all 5 inputs
+%[x,resnorm,residual] = lsqnonlin(func,x0,lb,[])
 
 %****check row/col input
 %x0 = [0.3 0.4];
@@ -52,14 +52,25 @@ ub = [0.5;0.5];
 %[x,resnorm,residual,flag,output,jacobian] = lsqnonlin(func,x0)
 
 %info = residmin_stat(func,x0,settings)
-
+% x = [1:10:100]';
+%func=@(p) p(1)*exp(-p(2)*x);
+% p = [1; 0.1];
+% data = func (p);
+% rnd = [0.352509; -0.040607; -1.867061; -1.561283; 1.473191; ...
+%        0.580767;  0.841805;  1.632203; -0.179254; 0.345208];
+% wt1 = (1 + 0 * x) ./ sqrt (data); 
+% data = data + 0.05 * rnd ./ wt1; 
+%df=@ (p) [exp(-p(2)*x),-p(1)*x.*exp(-p(2)*x)];
+%p0=[.8; .05]; 
+%opts=optimset("dfdp",df);
+%nonlin_residmin(@(p)func(p)-data,p0,opts)
 %*******Eg.2
-%
-%t = [0 .3 .8 1.1 1.6 2.3]';
-%y = [.82 .72 .63 .60 .55 .50]';
-%yhat = @(c,t) c(1) + c(2)*exp(-t);
-%opt = optimset('TolFun',1e-100)
-%[c,res,resid,flag,out,lamb,jacob] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0.2 0.6],[],opt)
+
+t = [0 .3 .8 1.1 1.6 2.3]';
+y = [.82 .72 .63 .60 .55 .50]';
+yhat = @(c,t) c(1) + c(2)*exp(-t);
+opt = optimset('TolFun',1e-100)
+[c,res,resid,flag,out,lamb,jacob] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0.2 0.6],[],opt)
 
 %*****user specified jacobian*******
 %t = [0 .3 .8 1.1 1.6 2.3]';
