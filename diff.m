@@ -22,7 +22,7 @@
 ## Author: Asma <Asma@ASMA-PC>
 ## Created: 2015-06-08
 
-function [F] = diff (p)
+function [F,J] = diff (p)
  x = 1:10:100;
  x=x';
  y=[9.2160e-001, 3.3170e-001, 8.9789e-002, 2.8480e-002, 2.6055e-002,...

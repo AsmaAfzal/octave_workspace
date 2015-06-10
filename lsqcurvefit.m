@@ -80,18 +80,13 @@ function varargout = lsqcurvefit (varargin)
   modelfun = varargin{1};
   
   if (nargin == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
-    p = optimset (
-		  "max_fract_change", [], \
-		  "fract_prec", [], \
-		  "diffp", [], \
+ p = optimset ("FinDiffRelStep", [], \
+		  "FinDiffType", "forward", \
 		  "TolFun", stol_default, \
-      "TolX", stol_default, \
 		  "MaxIter", [], \
 		  "Display", "off", \
- 		  "Jacobian", "off", \
-		  "Algorithm", "lm_svd_feasible", \
-		  "plot_cmd", @ (f) 0, \
-		  "lm_svd_feasible_alt_s", false);
+ 		  "Jacobian", "off", \  
+		  "Algorithm", "lm_svd_feasible");
     return;
   endif
 
@@ -116,6 +111,14 @@ function varargout = lsqcurvefit (varargin)
       if (strcmp (optimget (settings, "Jacobian"), "on")) 
           settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
       endif
+      FinDiffRelStep = optimget (settings, "FinDiffRelStep", eps^(1/3) * ones ( size( in_args{2})));
+      FinDiffType = optimget (settings, "FinDiffType", "forward");
+      if  (strcmp (FinDiffType, "central"))
+        diff_onesided = false ( size (in_args{2}));
+      else
+        diff_onesided = true ( size (in_args{2}));
+      endif
+    settings = optimset (settings, "diffp", FinDiffRelStep, "diff_onesided", diff_onesided);
     endif
     in_args{5} = settings;
   endif

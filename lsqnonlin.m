@@ -80,39 +80,16 @@ function varargout = lsqnonlin (varargin)
   modelfun = varargin{1};
   
   if (nargin == 1 && ischar (f) && strcmp (f, "defaults"))
-    p = optimset ("param_config", [], \
-		  "param_order", [], \
-		  "param_dims", [], \
-		  "f_inequc_pstruct", false, \
-		  "f_equc_pstruct", false, \
-		  "f_pstruct", false, \
-		  "df_inequc_pstruct", false, \
-		  "df_equc_pstruct", false, \
-		  "dfdp_pstruct", false, \
-		  "dfdp", [], \
-		  "cpiv", @ cpiv_bard, \
-		  "max_fract_change", [], \
-		  "fract_prec", [], \
-		  "diffp", [], \
-		  "diff_onesided", [], \
-		  "complex_step_derivative_f", false, \
-		  "complex_step_derivative_inequc", false, \
-		  "complex_step_derivative_equc", false, \
-		  "cstep", cstep_default, \
-		  "fixed", [], \
-		  "inequc", [], \
-		  "equc", [], \
-		  "weights", [], \
+    p = optimset ("FinDiffRelStep", [], \
+		  "FinDiffType", "forward", \
 		  "TolFun", stol_default, \
 		  "MaxIter", [], \
 		  "Display", "off", \
- 		  "Jacobian", "off", \
-		  "Algorithm", "lm_svd_feasible", \
-		  "plot_cmd", @ (f) 0, \
-		  "debug", false, \
-		  "lm_svd_feasible_alt_s", false);
+ 		  "Jacobian", "off", \  
+		  "Algorithm", "lm_svd_feasible");
     return;
   endif
+  
   if (nargs < 2 || nargs==3 || nargs > 5)
     print_usage ();
   endif
@@ -133,8 +110,16 @@ function varargout = lsqnonlin (varargin)
       if (strcmp (optimget (settings, "Jacobian"), "on")) 
           settings = optimset (settings, "dfdp", @(p) computeJacob (modelfun, p));
       endif
+      FinDiffRelStep = optimget (settings, "FinDiffRelStep", eps^(1/3) * ones ( size( in_args{2})));
+      FinDiffType = optimget (settings, "FinDiffType", "forward");
+      if  (strcmp (FinDiffType, "central"))
+        diff_onesided = false ( size (in_args{2}));
+      else
+        diff_onesided = true ( size (in_args{2}));
+      endif
+    settings = optimset (settings, "diffp", FinDiffRelStep, "diff_onesided", diff_onesided);
     endif
-    in_args{3} = settings;
+    in_args{3} = settings; 
   endif
 
   n_out = max (1, min (out_args, 5)); 
