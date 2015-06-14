@@ -77,16 +77,19 @@
 function varargout = lsqnonlin (varargin)
 
   nargs = nargin ();
-  modelfun = varargin{1};
   
-  if (nargin == 1 && ischar (f) && strcmp (f, "defaults"))
-    p = optimset ("FinDiffRelStep", [], \
-		  "FinDiffType", "forward", \
-		  "TolFun", stol_default, \
-		  "MaxIter", [], \
-		  "Display", "off", \
- 		  "Jacobian", "off", \  
-		  "Algorithm", "lm_svd_feasible");
+  TolFun_default = 1e-6;
+  MaxIter_default = 400;
+
+  if (nargs == 1 && ischar (f) && strcmp (f, "defaults"))
+    varargout{1} = optimset ("FinDiffRelStep", [],
+		             "FinDiffType", "forward",
+                             "TypicalX", 1,
+		             "TolFun", TolFun_default,
+		             "MaxIter", MaxIter_default,
+		             "Display", "off",
+ 		             "Jacobian", "off",
+		             "Algorithm", "lm_svd_feasible");
     return;
   endif
   
@@ -95,30 +98,52 @@ function varargout = lsqnonlin (varargin)
   endif
 
   if (! isreal (varargin{2}))
-    error('function does not accept complex inputs. Split into real and imaginary parts')
+    error ("Function does not accept complex inputs. Split into real and imaginary parts")
   endif
   
+  modelfun = varargin{1};
   out_args = nargout ();
   varargout = cell (1, out_args);
   in_args{1} = varargin{1};
   in_args{2} = varargin{2}(:);
   
   if (nargs >= 4)
-    settings = optimset ("lbound", varargin{3}(:), "ubound", varargin{4}(:));          
+    ## bounds are specified in a different way for nonlin_residmin
+    settings = optimset ("lbound", varargin{3}(:),
+                         "ubound", varargin{4}(:));
+
     if (nargs == 5)
       settings = optimset (settings, varargin{5});
-      if (strcmp (optimget (settings, "Jacobian"), "on")) 
-          settings = optimset (settings, "dfdp", @(p) computeJacob (modelfun, p));
+
+      ## Jacobian function is specified in a different way for
+      ## nonlin_residmin
+      if (strcmpi (optimget (settings, "Jacobian"), "on")) 
+          settings = optimset (settings,
+                               "dfdp", @(p) computeJacob (modelfun, p));
       endif
-      FinDiffRelStep = optimget (settings, "FinDiffRelStep", eps^(1/3) * ones ( size( in_args{2})));
+
+      ## apply default values which are possibly different from those of
+      ## nonlin_residmin
       FinDiffType = optimget (settings, "FinDiffType", "forward");
-      if  (strcmp (FinDiffType, "central"))
-        diff_onesided = false ( size (in_args{2}));
+      if (strcmpi (FinDiffType, "forward"))
+        FinDiffRelStep_default = sqrt (eps);
+      elseif (strcmpi (FinDiffType, "central"))
+        FinDiffRelStep_default = eps^(1/3);
       else
-        diff_onesided = true ( size (in_args{2}));
+        error ("unknown value of option 'FinDiffType': %s",
+               FinDiffType);
       endif
-    settings = optimset (settings, "diffp", FinDiffRelStep, "diff_onesided", diff_onesided);
+      FinDiffRelStep = optimget (settings, "FinDiffRelStep",
+                                 FinDiffRelStep_default);
+      TolFun = optimget (settings, TolFun_default);
+      MaxIter = optimget (settings, MaxIter_default);
+      settings = optimset (settings,
+                           "FinDiffRelStep", FinDiffRelStep,
+                           "FinDiffType", FinDiffType,
+                           "TolFun", TolFun,
+                           "MaxIter", MaxIter);
     endif
+
     in_args{3} = settings; 
   endif
 
@@ -158,7 +183,7 @@ function varargout = lsqnonlin (varargin)
   
   if (out_args >= 7)
     info = residmin_stat (modelfun, residmin_out{1}, optimset (settings, "ret_dfdp", true));
-    varargout{7} = sparse (info.dfdp);
+    varargout{7} = info.dfdp;
   endif
   
 endfunction
