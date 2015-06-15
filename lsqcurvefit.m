@@ -27,8 +27,7 @@
 ## @end group
 ## @end example
 ## 
-## The first four input arguments must be provided with non-empty initial guess @var{x0}. If the Jacobian is set to "on" in @var{options} 
-## then @var{fun} must return a second argument providing a user-sepcified Jacobian. For a given input @var{xdata}, @var{ydata} is the observed output. 
+## The first four input arguments must be provided with non-empty initial guess @var{x0}. For a given input @var{xdata}, @var{ydata} is the observed output. 
 ## @var{ydata} must be the same size as the vector (or matrix) returned by @var{fun}. The optional bounds @var{lb} and @var{ub} should be the same size as @var{x0}.
 ## @var{options} can be set with @code{optimset}
 ##
@@ -67,6 +66,13 @@
 ## @item output
 ## Structure with additional information, currently the only field is
 ## @code{iterations}, the number of used iterations.
+##
+## @item lambda
+## Structure containing Lagrange multipliers at the solution @var{x} sepatared by constraint type (@var{lb} and @var{ub}).
+##
+## @item jacobian
+## m-by-n matrix, where @var{jacobian}(i,j) is the partial derivative of @var{fun(i)} with respect to @var{x(j)}
+## If @code{Jacobian} is set to "on" in @var{options} then @var{fun} must return a second argument providing a user-sepcified Jacobian otherwise, lsqnonlin approximates the Jacobian using finite differences.
 ## @end table
 ##
 ## This function calls Octave's @code{nonlin_curvefit} function internally.
@@ -79,23 +85,27 @@ function varargout = lsqcurvefit (varargin)
   nargs = nargin ();
   modelfun = varargin{1};
   
-  if (nargin == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
- p = optimset ("FinDiffRelStep", [], \
-		  "FinDiffType", "forward", \
-		  "TolFun", stol_default, \
-		  "MaxIter", [], \
-		  "Display", "off", \
- 		  "Jacobian", "off", \  
-		  "Algorithm", "lm_svd_feasible");
+  TolFun_default = 1e-6;
+  MaxIter_default = 400;
+
+  if (nargs == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
+    varargout{1} = optimset ("FinDiffRelStep", [],...
+		             "FinDiffType", "forward",...
+                             "TypicalX", 1,...
+		             "TolFun", TolFun_default,...
+		             "MaxIter", MaxIter_default,...
+		             "Display", "off",...
+ 		             "Jacobian", "off",...
+		             "Algorithm", "lm_svd_feasible");
     return;
   endif
-
+  
   if (nargs < 4 || nargs==5 || nargs > 7)
     print_usage ();
   endif
   
    if (! isreal (varargin{2}))
-    error('function does not accept complex inputs. Split into real and imaginary parts')
+    error("Function does not accept complex inputs. Split into real and imaginary parts")
   endif
   
   out_args = nargout ();
@@ -105,22 +115,43 @@ function varargout = lsqcurvefit (varargin)
   in_args(3:4) = varargin(3:4);
   
   if (nargs >= 6)
-    settings = optimset ("lbound", varargin{5}(:), "ubound", varargin{6}(:));       
+     ## bounds are specified in a different way for nonlin_curvefit
+    settings = optimset ("lbound", varargin{5}(:),
+                         "ubound", varargin{6}(:));
+    
     if (nargs == 7)
       settings = optimset (settings, varargin{7});
-      if (strcmp (optimget (settings, "Jacobian"), "on")) 
-          settings = optimset ("dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
+
+      ## Jacobian function is specified in a different way for
+      ## nonlin_curvefit
+      if (strcmpi (optimget (settings, "Jacobian"), "on")) 
+          settings = optimset (settings,
+                               "dfdp", @(p) computeJacob (modelfun, p, in_args{3}));
       endif
-      FinDiffRelStep = optimget (settings, "FinDiffRelStep", eps^(1/3) * ones ( size( in_args{2})));
+      
+      ## apply default values which are possibly different from those of
+      ## nonlin_residmin
       FinDiffType = optimget (settings, "FinDiffType", "forward");
-      if  (strcmp (FinDiffType, "central"))
-        diff_onesided = false ( size (in_args{2}));
+      if (strcmpi (FinDiffType, "forward"))
+        FinDiffRelStep_default = sqrt (eps);
+      elseif (strcmpi (FinDiffType, "central"))
+        FinDiffRelStep_default = eps^(1/3);
       else
-        diff_onesided = true ( size (in_args{2}));
+        error ("unknown value of option 'FinDiffType': %s",
+               FinDiffType);
       endif
-    settings = optimset (settings, "diffp", FinDiffRelStep, "diff_onesided", diff_onesided);
+      FinDiffRelStep = optimget (settings, "FinDiffRelStep",
+                                 FinDiffRelStep_default);
+      TolFun = optimget (settings, "TolFun", TolFun_default);
+      MaxIter = optimget (settings, "MaxIter", MaxIter_default);
+      settings = optimset (settings,
+                           "FinDiffRelStep", FinDiffRelStep,
+                           "FinDiffType", FinDiffType,
+                           "TolFun", TolFun,
+                           "MaxIter", MaxIter);
     endif
-    in_args{5} = settings;
+
+    in_args{5} = settings; 
   endif
   
   n_out = max (1, min (out_args, 5)); 
@@ -137,11 +168,11 @@ function varargout = lsqcurvefit (varargin)
   varargout{1} = reshape (curvefit_out{1}, row, col);
 
   if (out_args >= 2)
-    varargout{2} = sum ((curvefit_out{2}-in_args{4}) .^ 2);
+    varargout{2} = sum ((curvefit_out{2} - in_args{4}) .^ 2);
   endif
   
   if (out_args >= 3)
-    varargout{3} = curvefit_out{2}-in_args{4};
+    varargout{3} = curvefit_out{2} - in_args{4};
   endif
   
   if (out_args >= 4)
@@ -160,7 +191,7 @@ function varargout = lsqcurvefit (varargin)
   
   if (out_args >= 7)
     info = residmin_stat (modelfun, curvefit_out{1}, optimset (settings, "ret_dfdp", true));
-    varargout{7} = sparse (info.dfdp);
+    varargout{7} = info.dfdp;
   endif
   
 endfunction

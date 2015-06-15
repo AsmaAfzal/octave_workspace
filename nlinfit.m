@@ -14,129 +14,139 @@
 ## along with Octave; see the file COPYING.  If not, see
 ## <http://www.gnu.org/licenses/>.
 ## -*- texinfo -*-
-## @deftypefn {Function File} {} nlinfit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata})
-## @deftypefnx {Function File} {} nlinfit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata}, @var{lb}, @var{ub})
-## @deftypefnx {Function File} {} nlinfit (@var{fun}, @var{x0}, @var{xdata}, @var{ydata}, @var{lb}, @var{ub}, @var{options})
-## @deftypefnx {Function File} {[@var{x}, @var{resnorm}, @var{residual}, @var{exitflag}, @var{output}, @var{lambda}, @var{jacobian}] =} nlinfit (@dots{})
-## Solve nonlinear least-squares (nonlinear data-fitting) problems
+## @deftypefn {Function File} {} nlinfit (@var{X}, @var{Y}, @var{modelfun}, @var{beta0})
+## @deftypefnx {Function File} {} nlinfit (@var{X}, @var{Y}, @var{modelfun}, @var{beta0}, @var{options})
+## @deftypefnx {Function File} {} nlinfit (@dots{}, @var{Name}, @var{Value})
+## @deftypefnx {Function File} {[@var{beta}, @var{R}, @var{J}, @var{CovB}, @var{MSE}] =} nlinfit (@dots{})
+## Nonlinear Regression using Iteratively Reweighted Least Squares (IRLS) Method. 
+##
 ## @example
 ## @group
-## min sum [EuclidianNorm (f(x,xdata(i)) -ydata(i) )] .^ 2
-##  x   i
+## min sum w(i) * [EuclidianNorm (Y(i) - modelfun (beta, X(i)))] .^ 2
+##         i
 ## @end group
 ## @end example
-## 
-## The first four input arguments must be provided with non-empty initial guess @var{x0}. If the Jacobian is set to "on" in @var{options} 
-## then @var{fun} must return a second argument providing a user-sepcified Jacobian. For a given input @var{xdata}, @var{ydata} is the observed output. 
-## @var{ydata} must be the same size as the vector (or matrix) returned by @var{fun}. The optional bounds @var{lb} and @var{ub} should be the same size as @var{x0}.
-## @var{options} can be set with @code{optimset}
+##
+## @var{X} is a matrix of independents, @var{Y} is the observed output and @var{modelfun} is the nonlinear regression model function.
+## @var{modelfun} should be specified as a function handle, which accepts two inputs: an array of coefficients and an array of independents- in that order.
+## The first four input arguments must be provided with non-empty initial guess of the coefficients @var{beta0}. 
+## @var{Y} and @var{X} must be the same size as the vector (or matrix) returned by @var{fun}.
+## @var{options} is a structure containing estimation algorithm options. It can be set using @code{statset}. Optional @var{Name}, 
+## @{Value} pair can be provided to set additional options. Currently the only applicable name-value pair is 'Weights', w, where w is the array of real positive weights .
 ##
 ## Returned values:
 ##
 ## @table @var
-## @item x
-## Coefficients to best fit the nonlinear function fun(x,xdata) to the observed values ydata.
+## @item beta
+## Coefficients to best fit the nonlinear function modelfun (beta, X) to the observed values Y.
 ##
-## @item resnorm
-## Scalar value of objective as squared EuclidianNorm(f(x)).
+## @item R
+## Value of solution residuals EuclidianNorm (modelfun (beta, X)).
+## If observation weights are specified then @var{R} is the array of weighted residuals.
 ##
-## @item residual
-## Value of solution residuals EuclidianNorm(f(x)).
+## @item J
+## m-by-n matrix, where @var{J(i,j)} is the partial derivative of @var{modelfun(i)} with respect to @var{x(j)}.
+## If observation weights are specified then @var{J} is the weighted  model function Jacobian.
 ##
-## @item exitflag
-## Status of solution:
+## @item CovB
+## p-by-p matrix of estimated covariance matrix for the fitted coefficients, where p is the number of fitted coefficients.
+## If the model Jacobian is full rank, then CovB = inv (J' * J) * MSE, where MSE is the mean-squared error.
 ##
-## @table @code
-## @item 0
-## Maximum number of iterations reached.
-##
-## @item 1
-## Solution x found.
-##
-## @item 2
-## Change in x was less than the specified tolerance.
-##
-## @item 3
-## Change in the residual was less than the specified tolerance.
-##
-## @item -1
-## Output function terminated the algorithm.
+## @item MSE
+## Scalar valued estimate of the variance of error term. If the model Jacobian is full rank, then MSE = (R' * R)/(N-p), 
+## where N is the number of observations and p is the number of estimated coefficients.
 ## @end table
 ##
-## @item output
-## Structure with additional information, currently the only field is
-## @code{iteratios}, the number of used iterations.
-## @end table
-##
-## This function calls Octave's @code{nonlin_curvefit} function internally.
+## This function calls Octave's @code{nonlin_curvefit} and @code{curvefit_stat} functions internally.
 ## @end deftypefn
 
-## PKG_ADD: __all_opts__ ("nlinfit");
+## PKG_ADD: __all_stat_opts__ ("nlinfit");
 
 function varargout = nlinfit (varargin)
 
   nargs = nargin ();
-  out_args = nargout ();
-  varargout = cell (1, out_args);
   
-  if (nargs < 4 || nargs==5 || nargs > 7)
+  TolFun_default = 1e-8;
+  MaxIter_default = 100;
+  DerivStep_default = eps ^ (1/3);
+  
+   if (nargs == 1 && ischar (varargin{1}) && strcmp (varargin{1}, "defaults"))
+    varargout{1} = optimset ("DerivStep", DerivStep_default,...
+		             "TolFun", TolFun_default,...
+		             "MaxIter", MaxIter_default,...
+		             "Display", "off");
+    return;
+  endif
+  
+  if (nargs < 4 || nargs==6 || nargs > 7)
     print_usage ();
   endif
   
-  in_args{1} = varargin{1};
-  in_args{2} = real (varargin{2}(:))
-  in_args(3:4) = varargin(3:4);
-
+   if (! isreal (varargin{4}))
+    error("Function does not accept complex inputs. Split into real and imaginary parts")
+  endif
+  
+  out_args = nargout ();
+  varargout = cell (1, out_args);
+    modelfun = varargin{3};
+  in_args{1} = varargin{3};
+  in_args{2} = varargin{4}(:);
+  in_args(3:4) = varargin(1:2);
   settings = struct ();
-  if (nargs >= 6)
-    settings = optimset ("lbound", varargin{5}(:), "ubound", varargin{6}(:));       
-    if (nargs == 7)
-      settings = optimset (settings, varargin{7});
+  
+  if (nargs >= 5)
+    if (isempty (varargin{5}))
+      settings = struct ();
+    else
+      settings = varargin{5};
     endif
-    in_args(5) = settings;
+    ## apply default values which are possibly different from those of
+    ## nonlin_curvefit
+    DerivStep = statget (settings, "DerivStep", DerivStep_default);
+    TolFun = statget (settings, "TolFun", TolFun_default); 
+    MaxIter = statget (settings, "MaxIter", MaxIter_default);
+    settings = optimset (settings, "FinDiffRelStep", DerivStep,...
+                           "TolFun", TolFun,...
+                           "MaxIter", MaxIter);
+    in_args{5} = settings;
   endif
   
-  n_out = max (1, min (out_args, 5)); 
-   
-  if (n_out > 2)
-    n_out = n_out - 1;
+  if (nargs == 7)
+    if (strcmpi (varargin{6}, "weights") ) 
+      settings = optimset (settings, "weights", varargin{7});
+      in_args{5} = settings;
+    else
+      error ("Unidentified Name-value pair input.")
+    endif   
   endif
-  
-  curvefit_out = cell (1, n_out);
 
-  [curvefit_out{:}] =  nonlin_curvefit (in_args{:});
+  n_out = max (1, min (out_args, 2)); 
   
-  [row, col] = size(varargin{2});
-  varargout{1} = reshape (curvefit_out{1}, row, col);
+  nlinfit_out = cell (1, n_out);
+
+  [nlinfit_out{:}] =  nonlin_curvefit (in_args{:});
+  
+  varargout{1} = nlinfit_out{1};
 
   if (out_args >= 2)
-    varargout{2} = sum ((curvefit_out{2}-in_args{4}) .^ 2);
+    if (nargs == 7)
+    varargout{2} = sqrt (varargin{7}).* (in_args{4} - nlinfit_out{2});
+    else
+    varargout{2} = in_args{4} - nlinfit_out{2};
+    endif
   endif
   
   if (out_args >= 3)
-    varargout{3} = curvefit_out{2}-in_args{4};
+    info = curvefit_stat (modelfun, nlinfit_out{1}, in_args{3}, in_args{4},
+                                              optimset (settings, "ret_dfdp", true, "ret_covp", true, "objf_type", "wls"));
+    varargout{3} = info.dfdp;
   endif
   
   if (out_args >= 4)
-    varargout{4} = curvefit_out{3};
-  endif
-  
-  if (out_args >= 5)
-    varargout{5} = curvefit_out{4};
+    varargout{4} = info.covp;
   endif
 
   if (out_args >= 5)
-    outp = curvefit_out{4};
-    outp = rmfield(outp, 'lambda');
-    varargout{5} = outp;
-  endif
-  
-  if (out_args >= 6)
-    varargout{6} = curvefit_out{4}.lambda;
-  endif
-  
-  if (out_args >= 7)
-     varargout{7} = sparse (jacobs (curvefit_out{1}, @(p) in_args{1}(p,in_args{3})));
-  endif
-  
+    varargout{5} = (varargout{2}' * varargout{2}) / (length (in_args{3}) - length (in_args{2}));
+  endif 
 endfunction

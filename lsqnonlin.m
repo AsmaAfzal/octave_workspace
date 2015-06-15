@@ -67,6 +67,13 @@
 ## @item output
 ## Structure with additional information, currently the only field is
 ## @code{iterations}, the number of used iterations.
+##
+## @item lambda
+## Structure containing Lagrange multipliers at the solution @var{x} sepatared by constraint type (@var{lb} and @var{ub}).
+##
+## @item jacobian
+## m-by-n matrix, where @var{jacobian(i,j)} is the partial derivative of @var{fun(i)} with respect to @var{x(j)}
+## If @code{Jacobian} is set to "on" in @var{options} then @var{fun} must return a second argument providing a user-sepcified Jacobian otherwise, lsqnonlin approximates the Jacobian using finite differences.
 ## @end table
 ##
 ## This function calls Octave's @code{nonlin_residmin} function internally.
@@ -81,14 +88,14 @@ function varargout = lsqnonlin (varargin)
   TolFun_default = 1e-6;
   MaxIter_default = 400;
 
-  if (nargs == 1 && ischar (f) && strcmp (f, "defaults"))
-    varargout{1} = optimset ("FinDiffRelStep", [],
-		             "FinDiffType", "forward",
-                             "TypicalX", 1,
-		             "TolFun", TolFun_default,
-		             "MaxIter", MaxIter_default,
-		             "Display", "off",
- 		             "Jacobian", "off",
+  if (nargs == 1 && ischar (varargin{1}) && strcmp (varargin{1}, "defaults"))
+    varargout{1} = optimset ("FinDiffRelStep", [],...
+		             "FinDiffType", "forward",...
+                             "TypicalX", 1,...
+		             "TolFun", TolFun_default,...
+		             "MaxIter", MaxIter_default,...
+		             "Display", "off",...
+ 		             "Jacobian", "off",...
 		             "Algorithm", "lm_svd_feasible");
     return;
   endif
@@ -135,8 +142,8 @@ function varargout = lsqnonlin (varargin)
       endif
       FinDiffRelStep = optimget (settings, "FinDiffRelStep",
                                  FinDiffRelStep_default);
-      TolFun = optimget (settings, TolFun_default);
-      MaxIter = optimget (settings, MaxIter_default);
+      TolFun = optimget (settings, "TolFun", TolFun_default);
+      MaxIter = optimget (settings, "MaxIter", MaxIter_default);
       settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
