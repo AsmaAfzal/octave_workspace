@@ -23,7 +23,7 @@
 ## @example
 ## @group
 ## min sum w(i) * [EuclidianNorm (Y(i) - modelfun (beta, X(i)))] .^ 2
-##         i
+##      i
 ## @end group
 ## @end example
 ##
@@ -130,16 +130,21 @@ function varargout = nlinfit (varargin)
 
   if (out_args >= 2)
     if (nargs == 7)
-    varargout{2} = sqrt (varargin{7}).* (in_args{4} - nlinfit_out{2});
+      varargout{2} = sqrt (varargin{7}).* (in_args{4} - nlinfit_out{2});
     else
-    varargout{2} = in_args{4} - nlinfit_out{2};
+      varargout{2} = in_args{4} - nlinfit_out{2};
     endif
   endif
   
   if (out_args >= 3)
     info = curvefit_stat (modelfun, nlinfit_out{1}, in_args{3}, in_args{4},
-                                              optimset (settings, "ret_dfdp", true, "ret_covp", true, "objf_type", "wls"));
-    varargout{3} = info.dfdp;
+                                 optimset (settings, "ret_dfdp", true, "ret_covp", true, "objf_type", "wls"));
+    if (nargs == 7)
+      weights = repmat (varargin{7}, 1, length (in_args{2}));
+      varargout{3} = sqrt (weights) .* info.dfdp;
+    else
+      varargout{3} = info.dfdp;
+    endif
   endif
   
   if (out_args >= 4)
