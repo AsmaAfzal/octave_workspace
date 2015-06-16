@@ -87,11 +87,11 @@ function varargout = lsqcurvefit (varargin)
   
   TolFun_default = 1e-6;
   MaxIter_default = 400;
-
+  TypicalX_default = 1;
   if (nargs == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
     varargout{1} = optimset ("FinDiffRelStep", [],...
 		             "FinDiffType", "forward",...
-                             "TypicalX", 1,...
+                             "TypicalX", TypicalX_default,...
 		             "TolFun", TolFun_default,...
 		             "MaxIter", MaxIter_default,...
 		             "Display", "off",...
@@ -147,7 +147,8 @@ function varargout = lsqcurvefit (varargin)
       settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
-                           "TolFun", TolFun,
+                           "TolFun", TolFun,                       
+                           "TypicalX", TypicalX_default,
                            "MaxIter", MaxIter);
     endif
 
