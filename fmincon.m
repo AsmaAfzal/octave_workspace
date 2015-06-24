@@ -42,9 +42,8 @@
 ## @var{fun} is the scalar objective function to be minimized. @var{A} and @var{Aeq} are the linear constraint matrices and @var{b} and @var{beq} 
 ## are the corresponding vectors. @var{nonlcon} is the function computing the nonlinear inequality and equality constraints. This function accepts 
 ## the vector @var{x} as input and gives the two output vectors @var{c(x)} and @var{ceq(x)}. 
-## @var{Y} and @var{X} must be the same size as the vector (or matrix) returned by @var{fun}.
 ## @var{options} is a structure containing estimation algorithm options. It can be set using @code{optimset}. If the option @code{GradObj} is set to 
-## @code{on}, @var{fun} must return a second output argument containing the gradient vector, @code{g(x)}. If the option @code{Hessian} os set to 
+## @code{on}, @var{fun} must return a second output argument containing the gradient vector, @code{g(x)}. If the option @code{Hessian} is set to 
 ## @code{user-supplied}, @var{fun} must return a third output argument containing the hessian matrix, @code{h(x)}. If the option @code{GradConstr} is set to 
 ## @code{on}, @var{nonlcon} must also return, in the third and fourth output arguments, GC, the gradient of c(x), and GCeq, the gradient of ceq(x).
 ##
@@ -123,17 +122,16 @@ function varargout = fmincon (f, x0, varargin)
   
   out_args = nargout ();
   varargout = cell (1, out_args);
-  in_args{1, 2} = {f, x0};
+  in_args{1} = f
+  in_args{2} = x0;
   inequc = cell(1,4);
   equc = cell(1,4);
-  
-  if (nargs >= 4)
-      ## linear constraints are specified in a different way for nonlin_min
-     inequc{1:2} = {{varargin{1}(:), varargin{2}(:)}}; 
-  endif  
+  settings = struct ();
+  ## linear constraints are specified in a different way for nonlin_min
+  inequc(1:2) = {-1 * varargin{1}.', varargin{2}}; 
 
   if (nargs >=6)
-     equc{1:2} = {{varargin{3}(:), varargin{4}(:)}}; 
+     equc(1:2) = {-1 * varargin{3}.', varargin{4}}; 
   endif
   
   if (nargs >= 8)
@@ -142,15 +140,8 @@ function varargout = fmincon (f, x0, varargin)
                          "ubound", varargin{6}(:));
   endif
     
-  if (nargs >= 9)
-     ## nonlinear constraints specified in a different way for nonlin_min
-     [c, ceq] = 
-     settings = optimset (settings, "lbound", varargin{5}(:),
-                         "ubound", varargin{6}(:));
-  endif
-  
-  
-      settings = optimset (settings, varargin{5});
+ if (nargs == 10)
+        settings = optimset (settings, varargin{5});
 
       ## Jacobian function is specified in a different way for
       ## nonlin_min
@@ -180,10 +171,10 @@ function varargout = fmincon (f, x0, varargin)
                            "TolFun", TolFun,
                            "TypicalX", TypicalX_default,
                            "MaxIter", MaxIter);
-    endif
-
-    in_args{3} = settings; 
   endif
+
+  settings = optimset (settings, "inequc", inequc, "equc", equc, "Algorithm", "octave_sqp"); 
+  in_args{3} = settings; 
 
   n_out = max (1, min (out_args, 5)); 
    
@@ -198,31 +189,23 @@ function varargout = fmincon (f, x0, varargin)
   varargout{1} = residmin_out{1};
 
   if (out_args >= 2)
-    varargout{2} = sum (residmin_out{2} .^ 2);
+    varargout{2} = residmin_out{2};
   endif
   
   if (out_args >= 3)
-    varargout{3} = residmin_out{2};
-  endif
-  
-  if (out_args >= 4)
-    varargout{4} = residmin_out{3};
+    varargout{3} = residmin_out{3};
   endif
 
-  if (out_args >= 5)
+  if (out_args >= 4)
     outp = residmin_out{4};
     outp = rmfield (outp, 'lambda');
-    varargout{5} = outp;
+    varargout{4} = outp;
   endif
   
-  if (out_args >= 6)
-    varargout{6} = residmin_out{4}.lambda;
+  if (out_args >= 5)
+    varargout{5} = residmin_out{4}.lambda;
   endif
-  
-  if (out_args >= 7)
-    info = residmin_stat (modelfun, residmin_out{1}, optimset (settings, "ret_dfdp", true));
-    varargout{7} = info.dfdp;
-  endif
+
   
 endfunction
 

@@ -12,4 +12,6 @@ A = [-1 -2 -2; ...
 b = [0;72];
 x0 = [10;10;10];    % Starting guess at the solution
 S=-A;
-[x,fval] = nonlin_min( f, x0, optimset ("inequc",{S',b},"Algorithm","octave_sqp") ) 
+%[x,fval] = nonlin_min( f, x0, optimset ("inequc",{S',b},"Algorithm","octave_sqp") ) 
+
+[x,fval] = fmincon(f,x0,A,b)
