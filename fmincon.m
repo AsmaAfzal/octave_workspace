@@ -72,7 +72,7 @@
 ## @item 3
 ## Change in the objective function was less than the specified tolerance.
 ##
-## @item -1
+## @item -1 
 ## Output function terminated the algorithm.
 ## @end table
 ##
@@ -97,22 +97,24 @@
 
 ## PKG_ADD: __all_opts__ ("fmincon");
 
-function varargout = fmincon (f, x0, varargin)
+function varargout = fmincon (modelfun, x0, varargin)
   nargs = nargin ();
   
   TolFun_default = 1e-6;
   MaxIter_default = 400;
   TypicalX_default = 1;
   
-  if (nargs == 1 && ischar (f) && strcmp (f, "defaults"))
+  if (nargs == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
     varargout{1} = optimset ("FinDiffRelStep", [],...
               "FinDiffType", "forward",...
                              "TypicalX", TypicalX_default,...
                "TolFun", TolFun_default,...
                "MaxIter", MaxIter_default,...
                "Display", "off",...
-                "Jacobian", "off",...
-               "Algorithm", "lm_svd_feasible");
+               "GradObj", "off",...
+               "Hessian", "dfdp",...
+               "GradConstr", "off",...
+               "Algorithm", "lm_feasible");
     return;
   endif
   
@@ -122,7 +124,7 @@ function varargout = fmincon (f, x0, varargin)
   
   out_args = nargout ();
   varargout = cell (1, out_args);
-  in_args{1} = f
+  in_args{1} = modelfun;
   in_args{2} = x0;
   inequc = cell(1,4);
   equc = cell(1,4);
@@ -136,36 +138,51 @@ function varargout = fmincon (f, x0, varargin)
   
   if (nargs >= 8)
      ## bounds are specified in a different way for nonlin_min
-     settings = optimset (settings, "lbound", varargin{5}(:),
+     settings = optimset ("lbound", varargin{5}(:),
                          "ubound", varargin{6}(:));
   endif
+
+  if (nargs >= 9)
+     equc{3} = @(p) computeC (modelfun, p);
+     inequc{3} =  @(p) computeCeq (modelfun, p);
+  endif
     
- if (nargs == 10)
-        settings = optimset (settings, varargin{5});
-
-      ## Jacobian function is specified in a different way for
-      ## nonlin_min
-      if (strcmpi (optimget (settings, "Jacobian"), "on")) 
-          settings = optimset (settings,
-                               "dfdp", @(p) computeJacob (modelfun, p));
-      endif
-
-      ## apply default values which are possibly different from those of
-      ## nonlin_min
-      FinDiffType = optimget (settings, "FinDiffType", "forward");
-      if (strcmpi (FinDiffType, "forward"))
-        FinDiffRelStep_default = sqrt (eps);
-      elseif (strcmpi (FinDiffType, "central"))
-        FinDiffRelStep_default = eps^(1/3);
-      else
-        error ("unknown value of option 'FinDiffType': %s",
-               FinDiffType);
-      endif
-      FinDiffRelStep = optimget (settings, "FinDiffRelStep",
-                                 FinDiffRelStep_default);
-      TolFun = optimget (settings, "TolFun", TolFun_default);
-      MaxIter = optimget (settings, "MaxIter", MaxIter_default);
+  if (nargs == 10)
+    settings = optimset (settings, varargin{5});
+    ## Jacobian function is specified in a different way for
+    ## nonlin_min
+    if (strcmpi (optimget (settings, "GradObj"), "on")) 
       settings = optimset (settings,
+                       "objf_grad", @(p) computeGrad (modelfun, p));
+    endif
+    ## Hessian function is specified in a different way for
+    ## nonlin_min
+    if (strcmpi (optimget (settings, "Hessian"), "user-supplied")) 
+      settings = optimset (settings,
+                       "objf_hessian", @(p) computeHess (modelfun, p));
+    endif
+    ## Hessian function is specified in a different way for
+    ## nonlin_min
+    if (strcmpi (optimget (settings, "GradConstr"), "on")) 
+      equc{4} = @(p) computeGC (modelfun, p);
+      inequc{4} =  @(p) computeGCeq (modelfun, p);
+    endif
+     ## apply default values which are possibly different from those of
+     ## nonlin_min
+     FinDiffType = optimget (settings, "FinDiffType", "forward");
+     if (strcmpi (FinDiffType, "forward"))
+       FinDiffRelStep_default = sqrt (eps);
+     elseif (strcmpi (FinDiffType, "central"))
+       FinDiffRelStep_default = eps^(1/3);
+     else
+       error ("unknown value of option 'FinDiffType': %s",
+               FinDiffType);
+     endif
+     FinDiffRelStep = optimget (settings, "FinDiffRelStep",
+                                 FinDiffRelStep_default);
+     TolFun = optimget (settings, "TolFun", TolFun_default);
+     MaxIter = optimget (settings, "MaxIter", MaxIter_default);
+     settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
                            "TolFun", TolFun,
@@ -209,6 +226,22 @@ function varargout = fmincon (f, x0, varargin)
   
 endfunction
 
-function Jacob = compute (modelfun, p)
-  [~, Jacob] = modelfun (p);
+function Grad = computeGrad (modelfun, p)
+  [~, Grad] = modelfun (p);
+endfunction
+
+function Hess = computeHess (modelfun, p)
+  [~, ~, Hess] = modelfun (p);
+endfunction
+
+function ceq =  computeCeq (nonlcon, p)
+  [~, ceq] = nonlcon (p);
+endfunction
+
+function GC =  computeGC (nonlcon, p)
+  [~, ~, GC, ~] = nonlcon (p);
+endfunction
+
+function GCeq =  computeGCeq (nonlcon, p)
+  [~, ~, ~, GCeq] = nonlcon (p);
 endfunction

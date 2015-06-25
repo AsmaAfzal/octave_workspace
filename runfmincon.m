@@ -14,4 +14,4 @@ x0 = [10;10;10];    % Starting guess at the solution
 S=-A;
 %[x,fval] = nonlin_min( f, x0, optimset ("inequc",{S',b},"Algorithm","octave_sqp") ) 
 
-[x,fval] = fmincon(f,x0,A,b)
+[x,fval,cvg,outp,lm] = fmincon(f,x0,A,b)
