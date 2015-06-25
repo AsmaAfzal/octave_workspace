@@ -130,10 +130,18 @@ function varargout = fmincon (modelfun, x0, varargin)
   equc = cell(1,4);
   settings = struct ();
   ## linear constraints are specified in a different way for nonlin_min
-  inequc(1:2) = {-1 * varargin{1}.', varargin{2}}; 
+  ineq_index = 1;
+  if (~ isempty(varargin{3}) && ~ isempty(varargin{4}) )
+     inequc(1:2) = {-1 * varargin{1}.', varargin{2}}; 
+     ineq_index = 3;
+  end
 
   if (nargs >=6)
-     equc(1:2) = {-1 * varargin{3}.', varargin{4}}; 
+     eq_index = 1;
+     if (~ isempty(varargin{3}) && ~ isempty(varargin{4}) )
+        equc(1:2) = {-1 * varargin{3}.', varargin{4}};
+        eq_index = 3;
+     end  
   endif
   
   if (nargs >= 8)
@@ -143,8 +151,9 @@ function varargout = fmincon (modelfun, x0, varargin)
   endif
 
   if (nargs >= 9)
-     equc{3} = @(p) computeC (modelfun, p);
-     inequc{3} =  @(p) computeCeq (modelfun, p);
+     nonlcon = varargin{7};
+     inequc{ineq_index} = @(p) nonlcon (p);
+     equc{eq_index} = @(p) computeCeq (nonlcon, p);
   endif
     
   if (nargs == 10)
