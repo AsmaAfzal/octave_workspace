@@ -109,6 +109,7 @@ function varargout = fmincon (modelfun, x0, varargin)
               "FinDiffType", "forward",...
                              "TypicalX", TypicalX_default,...
                "TolFun", TolFun_default,...
+               "TolX",[],...
                "MaxIter", MaxIter_default,...
                "Display", "off",...
                "GradObj", "off",...
@@ -124,21 +125,20 @@ function varargout = fmincon (modelfun, x0, varargin)
   
   out_args = nargout ();
   varargout = cell (1, out_args);
-  in_args{1} = modelfun;
-  in_args{2} = x0;
+  in_args(1:2) = {modelfun, x0};
   inequc = cell(1,4);
   equc = cell(1,4);
   settings = struct ();
   ## linear constraints are specified in a different way for nonlin_min
   ineq_index = 1;
-  if (~ isempty(varargin{3}) && ~ isempty(varargin{4}) )
+  if (~ isempty (varargin{1}) && ~ isempty (varargin{2}) )
      inequc(1:2) = {-1 * varargin{1}.', varargin{2}}; 
      ineq_index = 3;
   end
 
   if (nargs >=6)
      eq_index = 1;
-     if (~ isempty(varargin{3}) && ~ isempty(varargin{4}) )
+     if (~ isempty (varargin{3}) && ~ isempty (varargin{4}) )
         equc(1:2) = {-1 * varargin{3}.', varargin{4}};
         eq_index = 3;
      end  
@@ -151,13 +151,15 @@ function varargout = fmincon (modelfun, x0, varargin)
   endif
 
   if (nargs >= 9)
-     nonlcon = varargin{7};
-     inequc{ineq_index} = @(p) nonlcon (p);
-     equc{eq_index} = @(p) computeCeq (nonlcon, p);
+     if (~ isempty (varargin{7}))
+        nonlcon = varargin{7};
+        inequc{ineq_index} = @(p) nonlcon (p);
+        equc{eq_index} = @(p) computeCeq (nonlcon, p);
+     endif
   endif
     
   if (nargs == 10)
-    settings = optimset (settings, varargin{5});
+    settings = optimset (settings, varargin{8});
     ## Jacobian function is specified in a different way for
     ## nonlin_min
     if (strcmpi (optimget (settings, "GradObj"), "on")) 
@@ -166,7 +168,8 @@ function varargout = fmincon (modelfun, x0, varargin)
     endif
     ## Hessian function is specified in a different way for
     ## nonlin_min
-    if (strcmpi (optimget (settings, "Hessian"), "user-supplied")) 
+    Hessian = optimget (settings, "Hessian");
+    if (strcmpi (Hessian, "user-supplied") || strcmpi (Hessian, "on")) 
       settings = optimset (settings,
                        "objf_hessian", @(p) computeHess (modelfun, p));
     endif
@@ -199,7 +202,8 @@ function varargout = fmincon (modelfun, x0, varargin)
                            "MaxIter", MaxIter);
   endif
 
-  settings = optimset (settings, "inequc", inequc, "equc", equc, "Algorithm", "octave_sqp"); 
+  settings = optimset (settings, "inequc", inequc, "equc", equc);
+%  ,  "Algorithm", "octave_sqp"); 
   in_args{3} = settings; 
 
   n_out = max (1, min (out_args, 5)); 
@@ -208,28 +212,28 @@ function varargout = fmincon (modelfun, x0, varargin)
     n_out--;
   endif
   
-  residmin_out = cell (1, n_out);
+  min_out = cell (1, n_out);
 
-  [residmin_out{:}] =  nonlin_min (in_args{:});
+  [min_out{:}] =  nonlin_min (in_args{:});
 
-  varargout{1} = residmin_out{1};
+  varargout{1} = min_out{1};
 
   if (out_args >= 2)
-    varargout{2} = residmin_out{2};
+    varargout{2} = min_out{2};
   endif
   
   if (out_args >= 3)
-    varargout{3} = residmin_out{3};
+    varargout{3} = min_out{3};
   endif
 
   if (out_args >= 4)
-    outp = residmin_out{4};
+    outp = min_out{4};
     outp = rmfield (outp, 'lambda');
     varargout{4} = outp;
   endif
   
   if (out_args >= 5)
-    varargout{5} = residmin_out{4}.lambda;
+    varargout{5} = min_out{4}.lambda;
   endif
 
   
@@ -241,10 +245,6 @@ endfunction
 
 function Hess = computeHess (modelfun, p)
   [~, ~, Hess] = modelfun (p);
-endfunction
-
-function ceq =  computeCeq (nonlcon, p)
-  [~, ceq] = nonlcon (p);
 endfunction
 
 function GC =  computeGC (nonlcon, p)
