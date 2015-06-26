@@ -23,8 +23,10 @@ beq=[10;0];
 lb=[0;0;0;0];
 ub=[10;10;10;10];
 ceq=@(X) X(1)*X(2)-8-2/3-2/9;
-[x,fval] = nonlin_min( f, x0, optimset ("equc",{-Aeq.',beq,ceq},"lbound",lb,"ubound",ub,"Algorithm","octave_sqp") ) 
-[x,fval] = fmincon(f,x0,[],[],[],[],lb,ub,@nonlcon)
+gceq=@(X)[X(2); X(1)];
+m=-Aeq.';
+[x,fval] = nonlin_min( f, x0, optimset ("equc",{ceq,gceq},"lbound",lb,"ubound",ub,"Algorithm","octave_sqp") ) 
+[x,fval] = fmincon(f,x0,[],[],Aeq,beq,lb,ub,@nonlcon)
 
 
 %*****nonlcon*************
