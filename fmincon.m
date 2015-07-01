@@ -206,11 +206,7 @@ function varargout = fmincon (modelfun, x0, varargin)
 %  ,  "Algorithm", "octave_sqp"); 
   in_args{3} = settings; 
 
-  n_out = max (1, min (out_args, 5)); 
-   
-  if (n_out > 2)
-    n_out--;
-  endif
+  n_out = max (1, min (out_args, 4)); 
   
   min_out = cell (1, n_out);
 
@@ -247,8 +243,12 @@ function Hess = computeHess (modelfun, p)
   [~, ~, Hess] = modelfun (p);
 endfunction
 
+function Ceq = computeCeq (nonlcon, p)
+ [~,Ceq] = nonlcon (p);
+ endfunction
+ 
 function GC =  computeGC (nonlcon, p)
-  [~, ~, GC, ~] = nonlcon (p);
+  [~, ~, GC] = nonlcon (p);
 endfunction
 
 function GCeq =  computeGCeq (nonlcon, p)

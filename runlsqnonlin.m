@@ -1,12 +1,12 @@
 clc
 clear all
-%k = 1:10;
-%func = @(x) 2 + 2*k-exp(k*x(1))-exp(k*x(2));
+k = 1:10;
+func = @(x) 2 + 2*k-exp(k*x(1))-exp(k*x(2));
 %x0 = [0.3; 0.5];                        % Starting guess
-
+x0=[0;0.5];
 %********lsqnonlin==nonlin_residmin*******
 %x = lsqnonlin(func,x0)  
-%x = nonlin_residmin(func,x0)   
+x = nonlin_residmin(func,x0)   
 %[x,resnorm] = nonlin_residmin(func,x0)
 %[x,resnorm,residual] = lsqnonlin(func,x0)
 %[x,resnorm,flag] = nonlin_residmin(func,x0)
@@ -79,9 +79,9 @@ clear all
 %opt=optimset("Jacobian","on");
 %c = nonlin_residmin(@(c) myfun(c,t,y),c0,opt)
 %c = lsqnonlin(@(c) myfun(c,t,y),c0,opt)
-opts=optimset("Jacobian","on");
-p0=[0.8;0.05];
-p=lsqnonlin(@diff,p0,[],[],opts) 
+%opts=optimset("Jacobian","on");
+%p0=[0.8;0.05];
+%p=lsqnonlin(@diff,p0,[],[],opts) 
 
 %*****Complex Input******
 

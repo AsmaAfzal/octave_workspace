@@ -11,7 +11,10 @@
 %
 %endfunction
 
-function [c,ceq]=nonlcon(p)
-ceq = p(1)^2 + 1 - p(2);
-c = [];
+function [c,ceq]=nonlcon(x)
+%ceq = p(1)^2 + 1 - p(2);
+%c = [];
+c = -1*[x(1)^2/9 + x(2)^2/4 - 1;
+        x(1)^2 - x(2) - 1];
+ceq = tanh(x(1)) - x(2);
 endfunction
