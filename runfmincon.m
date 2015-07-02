@@ -11,14 +11,14 @@ clear all
 % settings = optimset("GradObj","on");
 % [x,fval] = fmincon(@objfun,pin,[],[],[],[],[],[],@nonlcon)
 % 
-f = @(x) -x(1) * x(2) * x(3);
-
-A = [-1 -2 -2; ...
-      1  2  2];
-b = [0;72];
-x0 = [0;10;10];    % Starting guess at the solution
-S=-A';
-[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
+%f = @(x) -x(1) * x(2) * x(3);
+%
+%A = [-1 -2 -2; ...
+%      1  2  2];
+%b = [0;72];
+%x0 = [0;10;10];    % Starting guess at the solution
+%S=-A';
+%[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
 %[x2,fval2] = nonlin_min( f, x0, optimset ("inequc",{S,b},"Algorithm","octave_sqp") )
 %
 %%settings = optimset("Algorithm","octave_sqp");
@@ -58,12 +58,12 @@ S=-A';
 
 %********checking multiple ceq functions and gceq
 
-%c = @(x)[x(1)^2/9 + x(2)^2/4 - 1;
-%        x(1)^2 - x(2) - 1];
-%ceq = @(x)tanh(x(1)) - x(2);
-%nonlinfcn = @(x)deal(c(x),ceq(x));
+c = @(x)[x(1)^2/9 + x(2)^2/4 - 1;
+        x(1)^2 - x(2) - 1];
+ceq = @(x)tanh(x(1)) - x(2);
+nonlinfcn = @(x)deal(c(x),ceq(x));
 %
-%obj = @(x)cosh(x(1))+sinh(x(2));
+obj = @(x)cosh(x(1))+sinh(x(2));
 %opts = optimset("Algorithm","octave_sqp");
-%%z = fmincon(obj,[0;0],[],[],[],[],[],[],@nonlcon,opts)
+z = fmincon(obj,[0;0],[],[],[],[],[],[],nonlinfcn)
 %z = nonlin_min(obj,[0;0],optimset("equc",{ceq},"inequc",{c},"Algorithm","octave_sqp"))

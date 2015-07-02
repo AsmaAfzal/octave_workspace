@@ -5,7 +5,8 @@ func = @(x) 2 + 2*k-exp(k*x(1))-exp(k*x(2));
 %x0 = [0.3; 0.5];                        % Starting guess
 x0=[0;0.5];
 %********lsqnonlin==nonlin_residmin*******
-%x = lsqnonlin(func,x0)  
+settings = optimset("TolFun",1e-9)
+[x1,resnorm] = lsqnonlin(func,x0,[],[], settings)  
 x = nonlin_residmin(func,x0)   
 %[x,resnorm] = nonlin_residmin(func,x0)
 %[x,resnorm,residual] = lsqnonlin(func,x0)
