@@ -140,15 +140,15 @@ function varargout = lsqcurvefit (varargin)
         error ("unknown value of option 'FinDiffType': %s",
                FinDiffType);
       endif
-      FinDiffRelStep = optimget (settings, "FinDiffRelStep",
-                                 FinDiffRelStep_default);
+      FinDiffRelStep = optimget (settings, "FinDiffRelStep", FinDiffRelStep_default);
       TolFun = optimget (settings, "TolFun", TolFun_default);
       MaxIter = optimget (settings, "MaxIter", MaxIter_default);
+      TypicalX = optimget (settings, "TypicalX", TypicalX_default);
       settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
                            "TolFun", TolFun,                       
-                           "TypicalX", TypicalX_default,
+                           "TypicalX", TypicalX,
                            "MaxIter", MaxIter);
     endif
 

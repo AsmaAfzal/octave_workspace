@@ -122,7 +122,7 @@ function varargout = lsqnonlin (varargin)
 
     if (nargs == 5)
       settings = optimset (settings, varargin{5});
-
+      
       ## Jacobian function is specified in a different way for
       ## nonlin_residmin
       if (strcmpi (optimget (settings, "Jacobian"), "on")) 
@@ -141,15 +141,15 @@ function varargout = lsqnonlin (varargin)
         error ("unknown value of option 'FinDiffType': %s",
                FinDiffType);
       endif
-      FinDiffRelStep = optimget (settings, "FinDiffRelStep",
-                                 FinDiffRelStep_default);
+      FinDiffRelStep = optimget (settings, "FinDiffRelStep", FinDiffRelStep_default);
       TolFun = optimget (settings, "TolFun", TolFun_default);
       MaxIter = optimget (settings, "MaxIter", MaxIter_default);
+      TypicalX = optimget (settings, "TypicalX", TypicalX_default);
       settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
                            "TolFun", TolFun,
-                           "TypicalX", TypicalX_default,
+                           "TypicalX", TypicalX,
                            "MaxIter", MaxIter);
     endif
 
@@ -182,7 +182,7 @@ function varargout = lsqnonlin (varargin)
 
   if (out_args >= 5)
     outp = residmin_out{4};
-    outp = rmfield (outp, 'lambda');
+    outp = rmfield (outp, "lambda");
     varargout{5} = outp;
   endif
   
