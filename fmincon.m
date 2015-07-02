@@ -103,7 +103,7 @@ function varargout = fmincon (modelfun, x0, varargin)
   TolFun_default = 1e-6;
   MaxIter_default = 400;
   TypicalX_default = 1;
-  
+
   if (nargs == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
     varargout{1} = optimset ("FinDiffRelStep", [],...
               "FinDiffType", "forward",...
@@ -153,13 +153,14 @@ function varargout = fmincon (modelfun, x0, varargin)
   if (nargs >= 9)
      if (~ isempty (varargin{7}))
         nonlcon = varargin{7};
-        inequc{ineq_index} = @(p) nonlcon (p);
+        inequc{ineq_index} = @(p) -1 * computeC (nonlcon, p);
         equc{eq_index} = @(p) computeCeq (nonlcon, p);
      endif
   endif
     
   if (nargs == 10)
-    settings = optimset (settings, varargin{8});
+%    settings = optimset (settings, varargin{8});
+    settings = struct();
     ## Jacobian function is specified in a different way for
     ## nonlin_min
     if (strcmpi (optimget (settings, "GradObj"), "on")) 
@@ -190,20 +191,25 @@ function varargout = fmincon (modelfun, x0, varargin)
        error ("unknown value of option 'FinDiffType': %s",
                FinDiffType);
      endif
-     FinDiffRelStep = optimget (settings, "FinDiffRelStep",
-                                 FinDiffRelStep_default);
+     FinDiffRelStep = optimget (settings, "FinDiffRelStep", FinDiffRelStep_default);
      TolFun = optimget (settings, "TolFun", TolFun_default);
      MaxIter = optimget (settings, "MaxIter", MaxIter_default);
+     TypicalX = optimget (settings, "TypicalX", TypicalX_default);
      settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
                            "TolFun", TolFun,
-                           "TypicalX", TypicalX_default,
+                           "TypicalX", TypicalX,
                            "MaxIter", MaxIter);
   endif
+  
+  if ( out_args >= 6)
+     settings = optimset (settings, "ret_objf_grad", true,
+                           "ret_hessian", true);
+  endif
+  
+  settings = optimset (settings, "inequc", inequc, "equc", equc, "Algorithm", "lm_feasible");
 
-  settings = optimset (settings, "inequc", inequc, "equc", equc);
-%  ,  "Algorithm", "octave_sqp"); 
   in_args{3} = settings; 
 
   n_out = max (1, min (out_args, 4)); 
@@ -224,14 +230,21 @@ function varargout = fmincon (modelfun, x0, varargin)
 
   if (out_args >= 4)
     outp = min_out{4};
-    outp = rmfield (outp, 'lambda');
+    outp = rmfield (outp, {"lambda", "objf_grad", "hessian"});
     varargout{4} = outp;
   endif
   
   if (out_args >= 5)
-    varargout{5} = min_out{4}.lambda;
+     varargout{5} = min_out{4}.lambda;
+  endif
+  
+  if (out_args >= 6)
+     varargout{6} = min_out{4}.objf_grad;
   endif
 
+  if (out_args >= 7)
+     varargout{7} = min_out{4}.hessian;
+  endif  
   
 endfunction
 
@@ -243,8 +256,12 @@ function Hess = computeHess (modelfun, p)
   [~, ~, Hess] = modelfun (p);
 endfunction
 
+function C = computeC (nonlcon, p)
+ [C, ~] = nonlcon (p);
+ endfunction
+
 function Ceq = computeCeq (nonlcon, p)
- [~,Ceq] = nonlcon (p);
+ [~, Ceq] = nonlcon (p);
  endfunction
  
 function GC =  computeGC (nonlcon, p)
