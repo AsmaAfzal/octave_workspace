@@ -89,7 +89,7 @@
 
 function varargout = quadprog (varargin)
 
-  nargs = nargin ();
+  nargs = nargin;
 
   n_out = nargout ();
   varargout = cell (1, n_out);
@@ -148,19 +148,261 @@ function varargout = quadprog (varargin)
   if (n_out >= 4)
     varargout{4}.iterations = qp_out{3}.solveiter;
   endif
+  
+  endfunction
+%%%%************************************************************************
+ function varargout = quadprog (H, f, varargin)
 
+  if (nargin == 1 && ischar (H) && strcmp (H, "defaults"))
+    varargout{1} = optimset ("MaxIter", 200);
+    return;
+  endif
+ 
+  nargs = nargin;
+  n_out = nargout ();
+  varargout = cell (1, n_out);
+
+  if (nargs < 2 || nargs == 3 || nargs == 5 || nargs > 10)
+    print_usage();
+  endif
+  
+  ## Checking the quadratic penalty
+  if (! issquare (H))
+    error ("Quadratic penalty matrix not square");
+  elseif (! ishermitian (H))
+    ## warning ("qp: quadratic penalty matrix not hermitian");
+    H = (H + H')/2;
+  endif
+  n = rows (H);
+  
+  ## Linear penalty.
+  if (isempty (f))
+    f = zeros (n, 1);
+  elseif (numel (f) != n)
+    error ("The linear term has incorrect length");
+  endif
+
+  if (nargs >= 3)
+  ## Inequality constraint matrices
+    A_in = varargin{1};
+    b_in = varargin{2};
+    A = zeros (0, n);
+    b = zeros (0, 1);
+    [dimA_in, n1] = size (A_in);
+    if (n1 != n)
+      error ("Inequality constraint matrix has incorrect column dimension");
+    else
+      if (! isempty (b_in))
+        if (numel (b_in) != dimA_in)
+          error ("Inequality constraint matrix and upper bound vector inconsistent");
+        elseif (isempty (A_lb))
+          A = [A; -A_in];
+          b = [b; -b_in];
+        endif
+      endif
+    endif
+  endif
+
+  if (nargs >= 5)
+  ## Equality constraint matrices
+    Aeq = varargin{3};
+    beq= varargin{4};
+    if (isempty (Aeq) || isempty (b))
+      Aeq = zeros (0, n);
+      beq= zeros (0, 1);
+      n_eq = 0;
+    else
+      [n_eq, n1] = size (Aeq);
+      if (n1 != n)
+        error ("Equality constraint matrix has incorrect column dimension");
+      endif
+      if (numel (beq) != n_eq)
+        error ("Equality constraint matrix and vector have inconsistent dimension");
+      endif
+    endif  
+  endif
+ 
+  if (nargs >= 7)
+  ## Bound constraints
+    lb = varargin{5};
+    ub = varargin{6};    
+    n_in = 0;
+    
+    if (! isempty (lb))
+      if (numel (lb) != n)
+        error ("Lower bound has incorrect length");
+      elseif (isempty (ub))
+        A = [A; eye(n)];
+        b = [b; lb];
+      endif
+    endif
+
+    if (! isempty (ub))
+      if (numel (ub) != n)
+        error ("Upper bound has incorrect length");
+      elseif (isempty (lb))
+        A = [A; -eye(n)];
+        b = [b; -ub];
+      endif
+    endif
+
+    if (! isempty (lb) && ! isempty (ub))
+      rtol = sqrt (eps);
+      for i = 1:n
+        if (abs (lb (i) - ub(i)) < rtol*(1 + max (abs (lb(i) + ub(i)))))
+          ## These are actually an equality constraint
+          tmprow = zeros (1,n);
+          tmprow(i) = 1;
+          Aeq= [Aeq;tmprow];
+          beq= [beq; 0.5*(lb(i) + ub(i))];
+          n_eq = n_eq + 1;
+        else
+          tmprow = zeros (1,n);
+          tmprow(i) = 1;
+          A = [A; tmprow; -tmprow];
+          b = [b; lb(i); -ub(i)];
+          n_in = n_in + 2;
+        endif
+      endfor
+    endif
+    
+  endif
+  
+  if (nargs >= 9)
+  ## Checking the initial guess (if empty it is resized to the
+  ## right dimension and filled with 0)
+    x0 = varargin{7}; 
+    if (numel (x0) != n)
+      error ("the initial guess has incorrect length");
+    endif
+  endif
+
+
+  if (nargs == 10)
+    if (isstruct (varargin{10}))
+      options = varargin{10};
+      nargs--;
+    else
+      options = struct ();
+    endif
+  endif
+  maxit = optimget (options, "MaxIter", 200);
+ 
+  ## Now we should have the following QP:
+  ##
+  ##   min_x  0.5*x'*H*x + x'*q
+  ##   s.t.   Aeq*x = beq
+  ##          A*x >= b
+  ## Discard inequality constraints that have -Inf bounds since those
+  ## will never be active but keep the index for ordering of lambda. 
+
+    idx = isinf (b) & b < 0;
+
+    b(idx) = [];
+    A(idx,:) = [];
+
+    n_in = numel (b);
+
+    ## Check if the initial guess is feasible.
+    if (isa (x0, "single") || isa (H, "single") || isa (q, "single")
+        || isa (A, "single") || isa (b, "single"))
+      rtol = sqrt (eps ("single"));
+    else
+      rtol = sqrt (eps);
+    endif
+
+    eq_infeasible = (n_eq > 0 && norm (A*x0-b) > rtol*(1+abs (b)));
+    in_infeasible = (n_in > 0 && any (A*x0-b < -rtol*(1+abs (b))));
+
+    exitflag = 0;
+    if (eq_infeasible || in_infeasible)
+      ## The initial guess is not feasible.
+      ## First define xbar that is feasible with respect to the equality
+      ## constraints.
+      if (eq_infeasible)
+        if (rank (A) < n_eq)
+          error ("qp: equality constraint matrix must be full row rank");
+        endif
+        xbar = pinv (A) * b;
+      else
+        xbar = x0;
+      endif
+
+      ## Check if xbar is feasible with respect to the inequality
+      ## constraints also.
+      if (n_in > 0)
+        res = A * xbar - b;
+        if (any (res < -rtol * (1 + abs (b))))
+          ## xbar is not feasible with respect to the inequality
+          ## constraints.  Compute a step in the null space of the
+          ## equality constraints, by solving a QP.  If the slack is
+          ## small, we have a feasible initial guess.  Otherwise, the
+          ## problem is infeasible.
+          if (n_eq > 0)
+            Z = null (A);
+            if (isempty (Z))
+              ## The problem is infeasible because Aeqis square and full
+              ## rank, but xbar is not feasible.
+              exitflag = 6;
+            endif
+          endif
+
+          if (exitflag != 6)
+            ## Solve an LP with additional slack variables to find
+            ## a feasible starting point.
+            gamma = eye (n_in);
+            if (n_eq > 0)
+              Atmp = [A*Z, gamma];
+              btmp = -res;
+            else
+              Atmp = [A, gamma];
+              btmp = b;
+            endif
+            ctmp = [zeros(n-n_eq, 1); ones(n_in, 1)];
+            lb = [-Inf(n-n_eq,1); zeros(n_in,1)];
+            ub = [];
+            ctype = repmat ("L", n_in, 1);
+            [P, dummy, status] = glpk (ctmp, Atmp, btmp, lb, ub, ctype);
+            if ((status == 0)
+                && all (abs (P(n-n_eq+1:end)) < rtol * (1 + norm (btmp))))
+              ## We found a feasible starting point
+              if (n_eq > 0)
+                x0 = xbar + Z*P(1:n-n_eq);
+              else
+                x0 = P(1:n);
+              endif
+            else
+              ## The problem is infeasible
+              exitflag = 6;
+            endif
+          endif
+        else
+          ## xbar is feasible.  We use it a starting point.
+          x0 = xbar;
+        endif
+      else
+        ## xbar is feasible.  We use it a starting point.
+        x0 = xbar;
+      endif
+    endif
+
+    if (exitflag == 0)
+      ## The initial (or computed) guess is feasible.
+      ## We call the solver.
+%      [x, lambda, exitflag, iter] = __qp__ (x0, H, q, A, b, A, b, maxit);
+       [x, lambda, exitflag, iter] = __qp__ (x0, H, f, Aeq, beq, A, b, maxit);
+    else
+      iter = 0;
+      varargout{1} = x0;
+      varargout{5} = [];
+    endif
+    varargout{2} = 0.5 * x' * H * x + q' * x;
+    varargout{4}.solveiter = iter;
+    varargout{3} = exitflag;
+
+  else
+    print_usage ();
+  endif
+
+  
 endfunction
-
-
-%!test
-%!shared H,f,A,b,l,x
-%! H= diag([1; 0]);
-%! f = [3; 4];
-%! A= [-1 -3; 2 5; 3 4];
-%! b = [-15; 100; 80];
-%! l= zeros(2,1);
-%! [x,fval,exitflag,output] = quadprog(H,f,A,b,[],[],l,[])
-%! assert(x,[0;5])
-%! assert(fval,20)
-%! assert(exitflag,1)
-%! assert(output.iterations,1)
