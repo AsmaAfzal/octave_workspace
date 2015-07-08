@@ -230,21 +230,25 @@ function varargout = fmincon (modelfun, x0, varargin)
 
   if (out_args >= 4)
     outp = min_out{4};
-    outp = rmfield (outp, {"lambda", "objf_grad", "hessian"});
+    if (isfield (outp,"lambda"))
+      outp = rmfield (outp, "lambda");
+      if (out_args >= 5 && isstruct (min_out{4}.lambda))
+        varargout{5} = min_out{4}.lambda;
+      endif
+    endif  
+    if (isfield (outp, {"objf_grad", "hessian"}))
+      outp = rmfield (outp, {"objf_grad", "hessian"});
+    if (out_args >= 6)
+      varargout{6} = min_out{4}.objf_grad;
+    endif
+    if (out_args >= 7)
+      varargout{7} = min_out{4}.hessian;
+    endif  
     varargout{4} = outp;
   endif
   
-  if (out_args >= 5)
-     varargout{5} = min_out{4}.lambda;
-  endif
   
-  if (out_args >= 6)
-     varargout{6} = min_out{4}.objf_grad;
-  endif
-
-  if (out_args >= 7)
-     varargout{7} = min_out{4}.hessian;
-  endif  
+  
   
 endfunction
 

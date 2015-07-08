@@ -64,6 +64,6 @@ ceq = @(x)tanh(x(1)) - x(2);
 nonlinfcn = @(x)deal(c(x),ceq(x));
 %
 obj = @(x)cosh(x(1))+sinh(x(2));
-%opts = optimset("Algorithm","octave_sqp");
+opts = optimset("Algorithm","octave_sqp");
 z = fmincon(obj,[0;0],[],[],[],[],[],[],nonlinfcn)
 %z = nonlin_min(obj,[0;0],optimset("equc",{ceq},"inequc",{c},"Algorithm","octave_sqp"))
