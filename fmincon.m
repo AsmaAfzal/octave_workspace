@@ -159,8 +159,7 @@ function varargout = fmincon (modelfun, x0, varargin)
   endif
     
   if (nargs == 10)
-%    settings = optimset (settings, varargin{8});
-    settings = struct();
+    settings = optimset (settings, varargin{8});
     ## Jacobian function is specified in a different way for
     ## nonlin_min
     if (strcmpi (optimget (settings, "GradObj"), "on")) 
@@ -204,12 +203,15 @@ function varargout = fmincon (modelfun, x0, varargin)
   endif
   
   if ( out_args >= 6)
-     settings = optimset (settings, "ret_objf_grad", true,
+    if (any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_objf_grad")) ||...
+    any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_hessian")))  
+      settings = optimset (settings, "ret_objf_grad", true,
                            "ret_hessian", true);
+    endif
   endif
   
-  settings = optimset (settings, "inequc", inequc, "equc", equc, "Algorithm", "lm_feasible");
-
+  settings = optimset (settings, "inequc", inequc, "equc", equc); 
+  
   in_args{3} = settings; 
 
   n_out = max (1, min (out_args, 4)); 
@@ -238,19 +240,17 @@ function varargout = fmincon (modelfun, x0, varargin)
     endif  
     if (isfield (outp, {"objf_grad", "hessian"}))
       outp = rmfield (outp, {"objf_grad", "hessian"});
-    if (out_args >= 6)
-      varargout{6} = min_out{4}.objf_grad;
+      if (out_args >= 6)
+        varargout{6} = min_out{4}.objf_grad;
+      endif
+      if (out_args >= 7)
+        varargout{7} = min_out{4}.hessian;
+      endif  
     endif
-    if (out_args >= 7)
-      varargout{7} = min_out{4}.hessian;
-    endif  
     varargout{4} = outp;
   endif
-  
-  
-  
-  
-endfunction
+
+  endfunction
 
 function Grad = computeGrad (modelfun, p)
   [~, Grad] = modelfun (p);
@@ -262,11 +262,11 @@ endfunction
 
 function C = computeC (nonlcon, p)
  [C, ~] = nonlcon (p);
- endfunction
+endfunction
 
 function Ceq = computeCeq (nonlcon, p)
  [~, Ceq] = nonlcon (p);
- endfunction
+endfunction
  
 function GC =  computeGC (nonlcon, p)
   [~, ~, GC] = nonlcon (p);
