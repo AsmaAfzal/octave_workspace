@@ -1,12 +1,12 @@
 clc
 clear all
 
-%objective_function = @ (p) p(1)^2 + p(2)^2;
-% pin = [-2; 5];
-% constraint_function = @ (p) p(1)^2 + 1 - p(2);
-% gceq = @(p) [2*p(1),-1];
-% gobjf = @(p) [2*p(1),2*p(2)];
-% [p, objf, cvg, outp] = nonlin_min (objective_function, pin, optimset ("equc", {constraint_function,gceq},"objf_grad",gobjf))
+objective_function = @ (p) p(1)^2 + p(2)^2;
+ pin = [-2; 5];
+ constraint_function = @ (p) p(1)^2 + 1 - p(2);
+ gceq = @(p) [2*p(1),-1];
+ gobjf = @(p) [2*p(1),2*p(2)];
+ [p, objf, cvg, outp] = nonlin_min (objective_function, pin, optimset ("equc", {constraint_function,gceq},"objf_grad",gobjf))
 
 % settings = optimset("GradObj","on");
 % [x,fval] = fmincon(@objfun,pin,[],[],[],[],[],[],@nonlcon)
@@ -67,18 +67,18 @@ clear all
 %opts = optimset("Algorithm","octave_sqp");
 %z = fmincon(obj,[0;0],[],[],[],[],[],[],nonlinfcn)
 %z = nonlin_min(obj,[0;0],optimset("equc",{ceq},"inequc",{c},"Algorithm","octave_sqp"))
-
-%***********lambda****
-f=@(X)-X(1)*X(2)^2*X(3)^3*X(4)^4;
-x0=[2.5;2.5;2.5;2.5];
-Aeq=[1 1 1 1; 1 1 -1 -1];
-beq=[10;0];
-lb=[0;0;0;0];
-ub=[10;10;10;10];
-ceq=@(X) X(1)*X(2)-8-2/3-2/9;
-gceq=@(X)[X(2) X(1)];
-m=-Aeq.';
-%[x1,fval1] = nonlin_min( f, x0, optimset ("equc",{ceq,gceq},"lbound",lb,"ubound",ub) ) 
-[x2,fval2] = nonlin_min( f, x0, optimset ("equc",{m,beq,ceq,gceq},"lbound",lb,"ubound",ub,"Algorithm","octave_sqp") ) 
+%
+%%***********lambda****
+%f=@(X)-X(1)*X(2)^2*X(3)^3*X(4)^4;
+%x0=[2.5;2.5;2.5;2.5];
+%Aeq=[1 1 1 1; 1 1 -1 -1];
+%beq=[10;0];
+%lb=[0;0;0;0];
+%ub=[10;10;10;10];
+%ceq=@(X) X(1)*X(2)-8-2/3-2/9;
+%gceq=@(X)[X(2) X(1)];
+%m=-Aeq.';
+%%[x1,fval1] = nonlin_min( f, x0, optimset ("equc",{ceq,gceq},"lbound",lb,"ubound",ub) ) 
+%[x2,fval2] = nonlin_min( f, x0, optimset ("equc",{m,beq,ceq,gceq},"lbound",lb,"ubound",ub,"Algorithm","octave_sqp") ) 
 %[x,fval,flag,out,lambda,grad,hess] = fmincon(f,x0,[],[],Aeq,beq,lb,ub,@nonlcon)
 
