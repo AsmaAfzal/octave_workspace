@@ -165,12 +165,14 @@
   elseif (numel (x0) != n)
     error ("The initial guess has incorrect length");
   endif
-
+  
+  lambda = struct ("lower", [], "upper", [], "eqlin", [], "ineqlin", []);
+  
   ## Inequality constraint matrices
   if (nargs > 2)
     A = zeros (0, n);
     b = zeros (0, 1); 
-    if (~ isempty (A) && ~ isempty (b))
+    if (~ isempty (A_in) && ~ isempty (b_in))
       [dimA_in, n1] = size (A_in);
       if (n1 != n)
         error ("Inequality constraint matrix has incorrect column dimension");
@@ -184,9 +186,11 @@
           endif
         endif
       endif
+      idx_ineq = isinf (b) & b < 0;
+      lambda.ineqlin = zeros (n, 0);
     endif
   endif
-  
+
   ## Equality constraint matrices
   if (isempty (Aeq) || isempty (beq))
     Aeq = zeros (0, n);
@@ -200,6 +204,7 @@
     if (numel (beq) != n_eq)
       error ("Equality constraint matrix and vector have inconsistent dimension");
     endif
+    lambda.eqlin = zeros (n, 0);
   endif  
     
   ## Bound constraints   
@@ -212,6 +217,8 @@
         A = [A; eye(n)];
         b = [b; lb];
       endif
+      idx_lb = isinf (lb) & lb < 0;
+      lambda.lower = zeros (0, n); 
     endif
 
    if (! isempty (ub))
@@ -221,6 +228,8 @@
         A = [A; -eye(n)];
         b = [b; -ub];
       endif
+      idx_lb = isinf (ub) & ub < 0;
+      lambda.upper = zeros (0, n);
     endif
 
    if (! isempty (lb) && ! isempty (ub))
@@ -346,7 +355,7 @@
   if (exitflag == 0)
     ## The initial (or computed) guess is feasible.
     ## We call the solver.
-     [x, lambda, exitflag, iter] = __qp__ (x0, H, f, Aeq, beq, A, b, maxit);
+     [x, qp_lambda, exitflag, iter] = __qp__ (x0, H, f, Aeq, beq, A, b, maxit);
   
   else
     iter = 0;
@@ -379,10 +388,41 @@
   endif
   
   if (n_out >= 5)
-    varargout{5}.lower = lambda;
-    varargout{5}.upper = lambda;
-    varargout{5}.ineqlin = lambda;
-    varargout{5}.eqlin = lambda;    
+    lm_idx=1;
+    
+    if (~ isempty (varargin{3}) && ~ isempty (varargin{4}))      
+      lambda.eqlin = qp_lambda(lm_idx:lm_idx + n_eq - 1);
+      lm_idx = lm_idx + n_eq;
+    endif
+    
+    if (~ isempty (varargin{1}) && ~ isempty (varargin{2}))
+      if (any (idx_ineq))
+         ineq_tmp = qp_lambda(lm_idx:lm_idx + dimA_in - 1);
+      else      
+         lambda.ineqlin = qp_lambda(lm_idx:lm_idx + dimA_in - 1 - sum (idx_ineq));
+         lm_idx = lm_idx + dimA_in - sum (idx_ineq);
+      endif
+    endif
+    
+    if (~ isempty (varargin{5}))      
+      if (any (idx_lb))
+         lb_tmp = qp_lambda(lm_idx:lm_idx + n - 1);
+      else      
+         lambda.lower = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_lb));
+         lm_idx = lm_idx + n - sum (idx_lb);
+      endif
+    endif
+    
+    if (~ isempty (varargin{6}))      
+      if (any (idx_lb))
+         ub_tmp = qp_lambda(lm_idx:lm_idx + n - 1);
+      else      
+         lambda.lower = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_ub));
+         lm_idx = lm_idx + n - sum (idx_ub);
+      endif
+    endif
+             
+    varargout{5} = lambda;    
   endif
  
 endfunction
