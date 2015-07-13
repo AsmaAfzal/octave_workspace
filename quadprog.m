@@ -22,7 +22,7 @@
 ## @deftypefnx {Function File} {} quadprog (@var{H}, @var{f}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub})
 ## @deftypefnx {Function File} {} quadprog (@var{H}, @var{f}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub}, @var{x0})
 ## @deftypefnx {Function File} {} quadprog (@var{H}, @var{f}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub}, @var{x0}, @var{options})
-## @deftypefnx {Function File} {[@var{x}, @var{fval}, @var{exitflag}, @var{output}] =} quadprog (@dots{})
+## @deftypefnx {Function File} {[@var{x}, @var{fval}, @var{exitflag}, @var{output}, @var{lambda}] =} quadprog (@dots{})
 ## Solve the quadratic program
 ## @example
 ## @group
@@ -79,7 +79,12 @@
 ##
 ## @item output
 ## Structure with additional information, currently the only field is
-## @code{iteratios}, the number of used iterations.
+## @code{iterations}, the number of used iterations.
+##
+## @item lambda
+## Structure containing Lagrange multipliers corresponding to the 
+## constraints.
+##
 ## @end table
 ##
 ## This function calls Octave's @code{__qp__} back-end algorithm internally.
@@ -151,8 +156,8 @@
   options = struct ();
   
   if (nargs == 10)
-    if (isstruct (varargin{10}))
-      options = varargin{10};
+    if (isstruct (varargin{8}))
+      options = varargin{8};
     endif
   endif
   
@@ -172,7 +177,7 @@
   if (nargs > 2)
     A = zeros (0, n);
     b = zeros (0, 1); 
-    if (~ isempty (A_in) && ~ isempty (b_in))
+    if (! isempty (A_in) && ! isempty (b_in))
       [dimA_in, n1] = size (A_in);
       if (n1 != n)
         error ("Inequality constraint matrix has incorrect column dimension");
@@ -228,9 +233,9 @@
         A = [A; -eye(n)];
         b = [b; -ub];
       endif
-      idx_lb = isinf (ub) & ub < 0;
+      idx_ub = isinf (ub) & ub < 0;
       lambda.upper = zeros (0, n);
-    endif
+   endif
 
    if (! isempty (lb) && ! isempty (ub))
       rtol = sqrt (eps);
@@ -250,7 +255,7 @@
           n_in = n_in + 2;
         endif
        endfor
-     endif
+    endif
   endif
  
   ## Now we should have the following QP:
@@ -262,7 +267,6 @@
   ## will never be active but keep the index for ordering of lambda. 
 
   idx = isinf (b) & b < 0;
-
   b(idx) = [];
   A(idx,:) = [];
 
@@ -305,9 +309,9 @@
         ## small, we have a feasible initial guess.  Otherwise, the
         ## problem is infeasible.
         if (n_eq > 0)
-          Z = null (A);
+          Z = null (Aeq);
           if (isempty (Z))
-            ## The problem is infeasible because Aeqis square and full
+            ## The problem is infeasible because Aeq is square and full
             ## rank, but xbar is not feasible.
             exitflag = 6;
           endif
@@ -387,15 +391,14 @@
     varargout{4}.iterations = iter;
   endif
   
-  if (n_out >= 5)
-    lm_idx=1;
-    
-    if (~ isempty (varargin{3}) && ~ isempty (varargin{4}))      
+  if (n_out >= 5 && exitflag == 0)
+    lm_idx=1;  
+    if (nargs > 4 && ! isempty (varargin{3}) && ! isempty (varargin{4}))      
       lambda.eqlin = qp_lambda(lm_idx:lm_idx + n_eq - 1);
       lm_idx = lm_idx + n_eq;
     endif
     
-    if (~ isempty (varargin{1}) && ~ isempty (varargin{2}))
+    if (nargs > 2 && ! isempty (varargin{1}) && ! isempty (varargin{2}))
       if (any (idx_ineq))
          ineq_tmp = qp_lambda(lm_idx:lm_idx + dimA_in - 1);
       else      
@@ -404,7 +407,7 @@
       endif
     endif
     
-    if (~ isempty (varargin{5}))      
+    if (nargs > 6 && ! isempty (varargin{5}))      
       if (any (idx_lb))
          lb_tmp = qp_lambda(lm_idx:lm_idx + n - 1);
       else      
@@ -413,15 +416,14 @@
       endif
     endif
     
-    if (~ isempty (varargin{6}))      
-      if (any (idx_lb))
+    if (nargs > 7 && ! isempty (varargin{6}))      
+      if (any (idx_ub))
          ub_tmp = qp_lambda(lm_idx:lm_idx + n - 1);
       else      
-         lambda.lower = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_ub));
+         lambda.upper = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_ub));
          lm_idx = lm_idx + n - sum (idx_ub);
       endif
-    endif
-             
+    endif             
     varargout{5} = lambda;    
   endif
  
