@@ -1,5 +1,6 @@
 ## Copyright (C) 2015 Asma Afzal
-## Copyright (C) 2015 Olaf Till <i7tiol@t-online.de>
+## Copyright (C) 2013-2015 Julien Bect
+## Copyright (C) 2000-2015 Gabriele Pannocchia
 ##
 ## Octave is free software; you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
@@ -181,17 +182,13 @@
       [dimA_in, n1] = size (A_in);
       if (n1 != n)
         error ("Inequality constraint matrix has incorrect column dimension");
-      else
-        if (! isempty (b_in))
-          if (numel (b_in) != dimA_in)
-            error ("Inequality constraint matrix and upper bound vector inconsistent");
-          else
-            A = [A; -A_in];
-            b = [b; -b_in];
-          endif
-        endif
       endif
-      idx_ineq = isinf (b) & b < 0;
+      if (numel (b_in) != dimA_in)
+        error ("Inequality constraint matrix and upper bound vector inconsistent");
+      endif 
+      A = [A; -A_in];
+      b = [b; -b_in];
+      idx_ineq = isinf (b_in) & b_in < 0;
       lambda.ineqlin = zeros (n, 0);
     endif
   endif
