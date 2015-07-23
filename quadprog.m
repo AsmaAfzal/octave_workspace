@@ -194,6 +194,8 @@
       ## will never be active but keep the index for ordering of lambda. 
       b(idx_ineq) = [];
       A(idx_ineq,:) = [];
+      elseif (isempty (A_in) && ! isempty (b_in) || ! isempty (A_in) && isempty (b_in))
+        error("The number of rows in A must be the same as the length of b")    
     endif
   endif
   ## Equality constraint matrices
