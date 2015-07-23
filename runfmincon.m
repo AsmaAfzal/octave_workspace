@@ -1,28 +1,29 @@
 clc
 clear all
 
-objective_function = @ (p) p(1)^2 + p(2)^2;
- pin = [-2; 5];
- constraint_function = @ (p) p(1)^2 + 1 - p(2);
- gceq = @(p) [2*p(1),-1];
- gobjf = @(p) [2*p(1),2*p(2)];
- [p, objf, cvg, outp] = nonlin_min (objective_function, pin, optimset ("equc", {constraint_function,gceq},"objf_grad",gobjf))
+%objective_function = @ (p) p(1)^2 + p(2)^2;
+% pin = [-2; 5];
+% constraint_function = @ (p) p(1)^2 + 1 - p(2);
+% gceq = @(p) [2*p(1),-1];
+% gobjf = @(p) [2*p(1),2*p(2)];
+% [p, objf, cvg, outp] = nonlin_min (objective_function, pin, optimset ("equc", {constraint_function,gceq},"objf_grad",gobjf))
 
 % settings = optimset("GradObj","on");
 % [x,fval] = fmincon(@objfun,pin,[],[],[],[],[],[],@nonlcon)
 % 
-%f = @(x) -x(1) * x(2) * x(3);
-%
-%A = [-1 -2 -2; ...
-%      1  2  2];
-%b = [0;72];
-%x0 = [0;10;10];    % Starting guess at the solution
-%S=-A';
-%[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
+f = @(x) -x(1) * x(2) * x(3);
+
+A = [-1 -2 -2; ...
+      1  2  2];
+b = [0;72];
+x0 = [0;10;10];    % Starting guess at the solution
+S=-A';
+[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
 %[x2,fval2] = nonlin_min( f, x0, optimset ("inequc",{S,b},"Algorithm","octave_sqp") )
 %
-%%settings = optimset("Algorithm","octave_sqp");
-%[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[]) 
+settings = optimset("Algorithm","octave_sqp");
+[x,fval,cvg] = fmincon(f,x0,A,b)
+[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[],[],settings) 
 
 %***********Equality con****
 %f=@(X)-X(1)*X(2)^2*X(3)^3*X(4)^4;
@@ -64,7 +65,7 @@ objective_function = @ (p) p(1)^2 + p(2)^2;
 %nonlinfcn = @(x)deal(c(x),ceq(x));
 %%
 %obj = @(x)cosh(x(1))+sinh(x(2));
-%opts = optimset("Algorithm","octave_sqp");
+%%opts = optimset("Algorithm","octave_sqp");
 %z = fmincon(obj,[0;0],[],[],[],[],[],[],nonlinfcn)
 %z = nonlin_min(obj,[0;0],optimset("equc",{ceq},"inequc",{c},"Algorithm","octave_sqp"))
 %

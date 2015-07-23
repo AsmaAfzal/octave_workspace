@@ -190,9 +190,12 @@
       b = [b; -b_in];
       idx_ineq = isinf (b_in) & b_in < 0;
       lambda.ineqlin = zeros (n, 0);
+      ## Discard inequality constraints that have -Inf bounds since those
+      ## will never be active but keep the index for ordering of lambda. 
+      b(idx_ineq) = [];
+      A(idx_ineq,:) = [];
     endif
   endif
-
   ## Equality constraint matrices
   if (isempty (Aeq) || isempty (beq))
     Aeq = zeros (0, n);
@@ -233,25 +236,30 @@
       idx_ub = isinf (ub) & ub < 0;
       lambda.upper = zeros (0, n);
    endif
-
+   count_not_ineq = 0;
    if (! isempty (lb) && ! isempty (ub))
       rtol = sqrt (eps);
-      for i = 1:n
+      idx_bounds_ineq = true(n,1);
+      A_lb =[];
+      for i = 1:n;
         if (abs (lb (i) - ub(i)) < rtol*(1 + max (abs (lb(i) + ub(i)))))
           ## These are actually an equality constraint
+          idx_bounds_ineq (i) = false;
           tmprow = zeros (1,n);
           tmprow(i) = 1;
-          Aeq= [Aeq;tmprow];
-          beq= [beq; 0.5*(lb(i) + ub(i))];
+          Aeq = [Aeq; tmprow];
+          beq = [beq; 0.5*(lb(i) + ub(i))];
           n_eq = n_eq + 1;
         else
           tmprow = zeros (1,n);
           tmprow(i) = 1;
-          A = [A; tmprow; -tmprow];
-          b = [b; lb(i); -ub(i)];
-          n_in = n_in + 2;
+          A_lb = [A_lb; tmprow];
         endif
-       endfor
+      endfor
+      count_not_ineq = sum (! idx_bounds_ineq);
+      lb = lb(idx_bounds_ineq); ub = ub(idx_bounds_ineq);
+      A = [A; A_lb; -A_lb];
+      b = [b; lb; -ub];
     endif
   endif
  
@@ -260,12 +268,6 @@
   ##   min_x  0.5*x'*H*x + x'*q
   ##   s.t.   Aeq*x = beq
   ##          A*x >= b
-  ## Discard inequality constraints that have -Inf bounds since those
-  ## will never be active but keep the index for ordering of lambda. 
-
-  idx = isinf (b) & b < 0;
-  b(idx) = [];
-  A(idx,:) = [];
 
   n_in = numel (b);
 
@@ -389,37 +391,35 @@
   endif
   
   if (n_out >= 5 && exitflag == 0)
-    lm_idx=1;  
-    if (nargs > 4 && ! isempty (varargin{3}) && ! isempty (varargin{4}))      
-      lambda.eqlin = qp_lambda(lm_idx:lm_idx + n_eq - 1);
+    lm_idx=1; tmp_not_ineq = 0;
+    if (nargs > 4 && (! isempty (varargin{3}) && ! isempty (varargin{4}) || count_not_ineq > 0))      
+      lambda.eqlin = -1 * qp_lambda(lm_idx:lm_idx + n_eq - count_not_ineq - 1);
+      tmp_not_ineq = -1 * qp_lambda(lm_idx + n_eq - count_not_ineq: lm_idx + n_eq -1);
       lm_idx = lm_idx + n_eq;
     endif
     
     if (nargs > 2 && ! isempty (varargin{1}) && ! isempty (varargin{2}))
-      if (any (idx_ineq))
-         ineq_tmp = qp_lambda(lm_idx:lm_idx + dimA_in - 1);
-      else      
-         lambda.ineqlin = qp_lambda(lm_idx:lm_idx + dimA_in - 1 - sum (idx_ineq));
+         ineq_tmp = qp_lambda(lm_idx:lm_idx + dimA_in - 1 - sum (idx_ineq));
+         lambda.ineqlin = ineq_tmp;
          lm_idx = lm_idx + dimA_in - sum (idx_ineq);
-      endif
     endif
     
-    if (nargs > 6 && ! isempty (varargin{5}))      
-      if (any (idx_lb))
-         lb_tmp = qp_lambda(lm_idx:lm_idx + n - 1);
-      else      
-         lambda.lower = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_lb));
-         lm_idx = lm_idx + n - sum (idx_lb);
-      endif
+    if (nargs > 6 && ! isempty (varargin{5}))  
+      lb_tmp = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_lb) - count_not_ineq);
+      idx = idx_bounds_ineq & ! idx_lb;
+      lambda.lower(idx) = lb_tmp;
+      lambda.lower(! idx) = 0;
+      lambda.lower = lambda.lower(:);
+      lm_idx = lm_idx + n - sum (idx_lb) - count_not_ineq;
     endif
     
     if (nargs > 7 && ! isempty (varargin{6}))      
-      if (any (idx_ub))
-         ub_tmp = qp_lambda(lm_idx:lm_idx + n - 1);
-      else      
-         lambda.upper = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_ub));
-         lm_idx = lm_idx + n - sum (idx_ub);
-      endif
+      ub_tmp = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_ub) - count_not_ineq);
+      idx = idx_bounds_ineq & ! idx_ub;
+      lambda.upper(idx) = ub_tmp;
+      lambda.upper(! idx) = 0;
+      lambda.upper(! idx_bounds_ineq) = tmp_not_ineq;
+      lambda.upper = lambda.upper(:);
     endif             
     varargout{5} = lambda;    
   endif
