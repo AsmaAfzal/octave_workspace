@@ -22,12 +22,12 @@
 ## Author: Asma <Asma@ASMA-PC>
 ## Created: 2015-06-02
 
-%function [f,j] = myfun (c,t)
-%f = c(1) + c(2)*exp(-t);
-%j(1:length(t),1)=1;
-%j(1:length(t),2)=exp(-t);
-%endfunction
-
-function w= myfun(a,varargin)
-w=nargin;
+function [f,j] = myfun (c,t)
+f = c(1) + c(2)*exp(-t);
+j(1:length(t),1)=1;
+j(1:length(t),2)=exp(-t);
 endfunction
+%
+%function w= myfun(a,varargin)
+%w=nargin;
+%endfunction

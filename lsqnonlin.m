@@ -73,7 +73,8 @@
 ##
 ## @item jacobian
 ## m-by-n matrix, where @var{jacobian(i,j)} is the partial derivative of @var{fun(i)} with respect to @var{x(j)}
-## If @code{Jacobian} is set to "on" in @var{options} then @var{fun} must return a second argument providing a user-sepcified Jacobian otherwise, lsqnonlin approximates the Jacobian using finite differences.
+## Default: lsqnonlin approximates the Jacobian using finite differences. If @code{Jacobian} is set to "on" in 
+## @var{options} then @var{fun} must return a second argument providing a user-sepcified Jacobian .
 ## @end table
 ##
 ## This function calls Octave's @code{nonlin_residmin} function internally.
@@ -200,3 +201,43 @@ endfunction
 function Jacob = computeJacob (modelfun, p)
   [~, Jacob] = modelfun (p);
 endfunction
+
+%!test
+%! t = [0 .3 .8 1.1 1.6 2.3];
+%! y = [.82 .72 .63 .60 .55 .50];
+%! yhat = @(c,t) c(1) + c(2)*exp(-t);
+%! opt = optimset('TolFun',1e-10);
+%! [c,resnorm,residual] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0 0],[],opt);
+%! assert (c, [ 0.47595; 0.34132], 1e-5)
+%! assert (resnorm, 3.2419e-004, 1e-8)
+%! assert(residual, [-2.7283e-003, 8.8079e-003, -6.8307e-004, -1.0432e-002, -5.1366e-003, 1.0172e-002], 1e-5)
+
+
+%!demo
+%!  %% Example for user specified Jacobian.
+%!  %% model function:
+%!  function [F,J] = myfun (p)
+%!     x = 1:10:100;
+%!     y=[9.2160e-001, 3.3170e-001, 8.9789e-002, 2.8480e-002, 2.6055e-002,...
+%!        8.3641e-003,  4.2362e-003,  3.1693e-003,  1.4739e-004,  2.9406e-004];
+%!     F= p(1)*exp(-p(2)*x)-y;
+%!     J=[exp(-p(2)*x),-p(1)*x.*exp(-p(2)*x)];
+%!  endfunction
+%!  %% independents and dependents:
+%!  x = 1:5;
+%!  y = [1, 2, 4, 7, 14];
+%!  %% initial values:
+%!  init = [.25; .25];
+%!  %% other configuration (default values):
+%!  tolerance = .0001;
+%!  max_iterations = 20;
+%!  weights = ones (1, 5);
+%!  dp = [.001; .001]; % bidirectional numeric gradient stepsize
+%!  dFdp = 'dfdp'; % function for gradient (numerical)
+%!
+%!  %% linear constraints, A.' * parametervector + B >= 0
+%!  A = [1; -1]; B = 0; % p(1) >= p(2);
+%!  options.inequc = {A, B};
+%!  
+%!  [c,res,resid,flag,out,lambda,jacob] = ... 
+%!      lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0 0],[],opt)
