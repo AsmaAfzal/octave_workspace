@@ -22,7 +22,7 @@
 ## Solve nonlinear least-squares (nonlinear data-fitting) problems
 ## @example
 ## @group
-## min sum [EuclidianNorm (f(x,xdata(i)) -ydata(i) )] .^ 2
+## min sum [EuclidianNorm (f(x,xdata(i)) - ydata(i) )] .^ 2
 ##  x     i
 ## @end group
 ## @end example
@@ -94,7 +94,7 @@ function varargout = lsqcurvefit (varargin)
                "TolFun", TolFun_default,...
                "MaxIter", MaxIter_default,...
                "Display", "off",...
-                "Jacobian", "off",...
+               "Jacobian", "off",...
                "Algorithm", "lm_svd_feasible");
     return;
   endif
@@ -234,5 +234,5 @@ endfunction
 %!  %% Jacobian setting
 %!  opts = optimset ("Jacobian", "on")
 %!
-%!  [c,resnorm,residual,flag,output,lambda,jacob] = ... 
+%!  [c, resnorm, residual, flag, output, lambda, jacob] = ... 
 %!      lsqcurvefit (myfun, p0, x, y, lb,  ub, opts)
