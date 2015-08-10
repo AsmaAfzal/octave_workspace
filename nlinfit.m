@@ -57,7 +57,8 @@
 ## where N is the number of observations and p is the number of estimated coefficients.
 ## @end table
 ##
-## This function calls Octave's @code{nonlin_curvefit} and @code{curvefit_stat} functions internally.
+## This function calls Octave's @code{nonlin_curvefit} and @code{curvefit_stat} functions internally. 
+## 
 ## @end deftypefn
 
 ## PKG_ADD: __all_stat_opts__ ("nlinfit");
@@ -112,6 +113,7 @@ function varargout = nlinfit (varargin)
   endif
   
   if (nargs == 7)
+  ## weights are specified in a different way for nonlin_curvefit
     if (strcmpi (varargin{6}, "weights") ) 
       settings = optimset (settings, "weights", varargin{7});
       in_args{5} = settings;
@@ -130,6 +132,7 @@ function varargout = nlinfit (varargin)
 
   if (out_args >= 2)
     if (nargs == 7)
+     ## weighted residual
       varargout{2} = sqrt (varargin{7}).* (in_args{4} - nlinfit_out{2});
     else
       varargout{2} = in_args{4} - nlinfit_out{2};
@@ -140,6 +143,7 @@ function varargout = nlinfit (varargin)
     info = curvefit_stat (modelfun, nlinfit_out{1}, in_args{3}, in_args{4},
                                  optimset (settings, "ret_dfdp", true, "ret_covp", true, "objf_type", "wls"));
     if (nargs == 7)
+      ## weighted Jacobian
       weights = repmat (varargin{7}, 1, length (in_args{2}));
       varargout{3} = sqrt (weights) .* info.dfdp;
     else
@@ -155,3 +159,31 @@ function varargout = nlinfit (varargin)
     varargout{5} = (varargout{2}' * varargout{2}) / (length (in_args{3}) - length (in_args{2}));
   endif 
 endfunction
+
+%!test
+%! modelfun = @(b, x) (b(1) + b(2) * exp (- b(3) * x));
+%! b = [1;3;2];
+%! xdata = exprnd (2,100,1);
+%! ydata = modelfun (b,xdata) + normrnd (0,0.1,100,1);
+%! beta0 = [2;2;3];
+%! beta = nlinfit(xdata,ydata,modelfun,beta0);
+%! assert (beta, [1;3;2], 1e-1)
+
+%!demo
+%! %% modelfun = @(b, x) (b(1) + b(2) * exp(- b(3) * x));
+%! %% actual value beta = [1;3;2]
+%! %% x = exponentially distributed random variable
+%! x = [3.49622; 0.33751; 1.25675; 3.66981; 0.26237; 5.51095;...
+%!      2.11407; 1.48774; 6.22436; 2.04519];
+%! %% y_actual = modelfun(beta,x)     
+%! y_actual = [1.0028; 2.5274; 1.2430; 1.0019; 2.7751; 1.0000;...
+%!            1.0437; 1.1531; 1.0000; 1.0502];
+%! %% y_noisy = y_actual + noise           
+%! y_noisy =  [1.17891; 2.46055; 1.47400; 0.95433; 2.66687; 1.12279;...
+%!            1.10664; 1.30461; 1.11601; 0.95274];
+%! %% initial guess           
+%! beta0 = [2;2;2];
+%! %% weight vector
+%! weights = [5; 16; 1; 20; 12; 11; 17; 8; 11; 13];
+%! beta = nlinfit(x,y_noisy,modelfun,beta0)
+%! beta = nlinfit(x,y_noisy,modelfun,beta0,[],"weights",weights)

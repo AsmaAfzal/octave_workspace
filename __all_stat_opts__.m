@@ -1,4 +1,4 @@
-## Copyright (C) 2015 Asma Afzal
+## Copyright (C) 2009-2015 VZLU Prague
 ##
 ## Octave is free software; you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@
 ## Query all options from all known optimization functions and return a
 ## list of possible values.
 ##
-## Copied from Octave (was '__all_opts__') (Olaf Till
-## <i7tiol@t-online.de>).
+## Copied from Octave (was '__all_opts__') (Asma Afzal <asmaafzal5@gmail.com>).
+## @end deftypefn
 
 function names = __all_stat_opts__ (varargin)
 

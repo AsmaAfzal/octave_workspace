@@ -1,4 +1,5 @@
-## Copyright (C) 2015 Asma Afzal
+## Copyright (C) 2008-2015 Jaroslav Hajek
+## Copyright (C) 2009 VZLU Prague
 ##
 ## Octave is free software; you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
@@ -23,7 +24,7 @@
 ## If @var{parname} is not defined then return @var{default} if supplied,
 ## otherwise return an empty matrix.
 ##
-## (This function uses the code of Octaves 'optimget' function.)
+## Copied from Octave (was 'optimget') (Asma Afzal <asmaafzal5@gmail.com>).
 ## @end deftypefn
 
 function retval = statget (options, parname, default)
@@ -35,14 +36,19 @@ function retval = statget (options, parname, default)
   ## Expand partial-length names into full names
   opts = __all_stat_opts__ ();
   
-  idx = lookup (tolower (opts), tolower (parname), "m");
+  idx = strncmpi (opts, parname, length (parname));
+  nmatch = sum (idx);
 
-  if (idx)
+  if (nmatch == 1)
     parname = opts{idx};
+  elseif
+    warning ("statget: unrecognized option: %s", parname);
   else
-    warning ("unrecognized option: %s", parname);
+    fmt = sprintf ("statget: ambiguous option: %%s (%s%%s)",
+          repmat ("%s, ", 1, nmatch-1));
+    warning (fmt, parname, opts{idx});
   endif
-  if (isfield (options, parname))
+  if (isfield (options, parname) && ! isempty (options.(parname)))
     retval = options.(parname);
   elseif (nargin > 2)
     retval = default;
@@ -67,6 +73,5 @@ endfunction
 %!error statget (1,2,3,4,5)
 %!error statget (1, "name")
 %!error statget (struct (), 2)
-%!warning <unrecognized option: foobar> (statget (opts, "foobar"));
-%!warning <ambiguous option: Max> (statget (opts, "Max"));
+%!warning <statget: ambiguous option: Max> (statget (opts, "Max"));
 

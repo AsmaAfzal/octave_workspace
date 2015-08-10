@@ -1,4 +1,5 @@
-## Copyright (C) 2015 Asma Afzal 
+## Copyright (C) 2007-2015 John W. Eaton
+## Copyright (C) 2009 VZLU Prague
 ##
 ## Octave is free software; you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
@@ -24,7 +25,7 @@
 ##
 ## Please see individual database functions for valid settings.
 ##
-## (This function uses the code of Octaves 'optimset' function.)
+## Copied from Octave (was 'optimset') (Asma Afzal <asmaafzal5@gmail.com>).
 ## @end deftypefn
 
 function retval = statset (varargin)
@@ -59,17 +60,21 @@ function retval = statset (varargin)
     fnames = fieldnames (old);
     ## skip validation if we're in the internal query
     validation = ! isempty (opts);
-    lopts = tolower (opts);
     for [val, key] = new
       if (validation)
         ## Case insensitive lookup in all options.
-        i = lookup (lopts, tolower (key));
+        i = strncmpi (opts, key, length (key));
+        nmatch = sum (i);
         ## Validate option.
-        if (i > 0 && strcmpi (opts{i}, key))
+        if (nmatch == 1)
+          key = opts{find (i)};
           ## Use correct case.
-          key = opts{i};
+        elseif (nmatch == 0)
+          warning ("statset: unrecognized option: %s", key);
         else
-          warning ("unrecognized option: %s", key);
+          fmt = sprintf ("statset: ambiguous option: %%s (%s%%s)",
+                         repmat ("%s, ", 1, nmatch-1));
+          warning (fmt, key, opts{i});               
         endif
       endif
       old.(key) = val;
@@ -90,7 +95,6 @@ function retval = statset (varargin)
 
 endfunction
 
-
 %!assert (isfield (statset (), "TolFun"))
 %!assert (isfield (statset ("tolFun", 1e-3), "TolFun"))
 %!assert (statget (statset ("tolx", 1e-2), "tOLx"), 1e-2)
@@ -98,6 +102,6 @@ endfunction
 ## Test input validation
 %!error statset ("1_Parameter")
 %!error <no defaults for function> statset ("%NOT_A_REAL_FUNCTION_NAME%")
-%!warning <unrecognized option: foobar> statset ("foobar", 13);
-%!warning <ambiguous option: Max> statset ("Max", 10);
+%!warning <statset: unrecognized option: foobar> statset ("foobar", 13);
+%!warning <statset: ambiguous option: Max> statset ("Max", 10);
 
