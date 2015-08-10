@@ -83,12 +83,11 @@
 function varargout = lsqcurvefit (varargin)
 
   nargs = nargin ();
-  modelfun = varargin{1};
-  
+ 
   TolFun_default = 1e-6;
   MaxIter_default = 400;
   TypicalX_default = 1;
-  if (nargs == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
+  if (nargs == 1 && ischar (varargin{1}) && strcmp (varargin{1}, "defaults"))
     varargout{1} = optimset ("FinDiffRelStep", [],...
                "FinDiffType", "forward",...
                              "TypicalX", TypicalX_default,...
@@ -108,6 +107,7 @@ function varargout = lsqcurvefit (varargin)
     error("Function does not accept complex inputs. Split into real and imaginary parts")
   endif
   
+  modelfun = varargin{1};
   out_args = nargout ();
   varargout = cell (1, out_args);
   in_args{1} = varargin{1};
