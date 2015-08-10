@@ -78,15 +78,19 @@ clear all
 %[c,res,resid,flag,out,lambda,jacob] = lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0 0],[],opt)
 
 %*****user specified jacobian*******
-%t = [0 .3 .8 1.1 1.6 2.3]';
-%y = [.82 .72 .63 .60 .55 .50]';
+%t = [0 .3 .8 1.1 1.6 2.3];
+%y = [.82 .72 .63 .60 .55 .50];
 %c0=[1;1];
 %opt=optimset("Jacobian","on");
 %c = nonlin_residmin(@(c) myfun(c,t,y),c0,opt)
 %c = lsqnonlin(@(c) myfun(c,t,y),c0,opt)
-%opts=optimset("Jacobian","on");
-%p0=[0.8;0.05];
-%p=lsqnonlin(@diff,p0,[],[],opts) 
+ x = 1:10:100;
+ x=x';
+ y=[9.2160e-001, 3.3170e-001, 8.9789e-002, 2.8480e-002, 2.6055e-002,...
+     8.3641e-003,  4.2362e-003,  3.1693e-003,  1.4739e-004,  2.9406e-004]';
+opts=optimset("Jacobian","on");
+p0=[0.8;0.05];
+p=lsqnonlin(@(p)diff(p,x,y),p0,[],[],opts) 
 
 %*****Complex Input******
 
@@ -99,9 +103,5 @@ clear all
 %x0 = (1+1i)*[1;1;1]; % arbitrary initial guess
 %[vest,resnorm,exitflag,output] = nonlin_residmin(objfcn,real(x0))
 %%%%%%%%%%Test Example%%%%%%%%%%%%%%%%%%%%
-function [F,J] = myfun (c, t, y)
-F = c(1) + c(2)*exp(-t) - y;
-J(1:length(t),1)=1;
-J(1:length(t),2)=exp(-t);
-endfunction
+
 

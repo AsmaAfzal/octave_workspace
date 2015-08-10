@@ -22,12 +22,18 @@
 ## Author: Asma <Asma@ASMA-PC>
 ## Created: 2015-06-08
 
-function [F,J] = diff (p)
- x = 1:10:100;
- x=x';
- y=[9.2160e-001, 3.3170e-001, 8.9789e-002, 2.8480e-002, 2.6055e-002,...
-     8.3641e-003,  4.2362e-003,  3.1693e-003,  1.4739e-004,  2.9406e-004]';
- F= p(1)*exp(-p(2)*x)-y;
+%lsqnonlin
+%function [F,J] = diff (p, x,y)
+% F= p(1)*exp(-p(2)*x)-y;
+%%J=[x,p(2)*x];
+%J=[exp(-p(2)*x),-p(1)*x.*exp(-p(2)*x)];
+% endfunction
+
+
+%lsqcurvefit 
+ function [F,J] = diff (p, x)
+ F= p(1)*exp(-p(2)*x);
 %J=[x,p(2)*x];
 J=[exp(-p(2)*x),-p(1)*x.*exp(-p(2)*x)];
  endfunction
+

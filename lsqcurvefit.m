@@ -191,7 +191,8 @@ function varargout = lsqcurvefit (varargin)
   endif
   
   if (out_args >= 7)
-    info = residmin_stat (modelfun, curvefit_out{1}, optimset (settings, "ret_dfdp", true));
+    info = curvefit_stat (modelfun, curvefit_out{1}, in_args{3}, in_args{4},
+                          optimset (settings, "ret_dfdp", true));
     varargout{7} = info.dfdp;
   endif
   
@@ -200,3 +201,38 @@ endfunction
 function Jacob = computeJacob (modelfun, p, xdata)
   [~, Jacob] = modelfun (p, xdata);
 endfunction
+
+%!test
+%! xdata = [0 .3 .8 1.1 1.6 2.3];
+%! ydata = [.82 .72 .63 .60 .55 .50];
+%! yhat = @(p,x) p(1) + p(2)*exp(-x);
+%! opt = optimset('TolFun',1e-100);
+%! [p, resnorm, residual] = lsqcurvefit(yhat,[1 1], xdata, ydata,[0 0],[],opt);
+%! assert (p, [ 0.47595; 0.34132], 1e-5)
+%! assert (resnorm, 3.2419e-004, 1e-8)
+%! assert(residual, [-2.7283e-003, 8.8079e-003, -6.8307e-004, -1.0432e-002, -5.1366e-003, 1.0172e-002], 1e-5)
+
+%!demo
+%!  %% Example for user specified Jacobian.
+%!  %% model function:
+%!  function [F,J] = myfun (p, x)
+%!    F = p(1) * exp (-p(2) * x);
+%!    if nargout > 1   
+%!      J =[exp (- p(2) * x), - p(1) * x .* exp (- p(2) * x)];
+%!    endif
+%!  endfunction
+%!  
+%!  %% independents
+%!  x = [1:10:100]'; 
+%!  %% observed data
+%!  y =[9.2160e-001, 3.3170e-001, 8.9789e-002, 2.8480e-002, 2.6055e-002,...
+%!     8.3641e-003,  4.2362e-003,  3.1693e-003,  1.4739e-004,  2.9406e-004]'; 
+%!  %% initial values:
+%!  p0=[0.8; 0.05];
+%!  %% bounds
+%!  lb=[0; 0]; ub=[];
+%!  %% Jacobian setting
+%!  opts = optimset ("Jacobian", "on")
+%!
+%!  [c,resnorm,residual,flag,output,lambda,jacob] = ... 
+%!      lsqcurvefit (myfun, p0, x, y, lb,  ub, opts)

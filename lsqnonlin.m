@@ -216,28 +216,24 @@ endfunction
 %!demo
 %!  %% Example for user specified Jacobian.
 %!  %% model function:
-%!  function [F,J] = myfun (p)
-%!     x = 1:10:100;
-%!     y=[9.2160e-001, 3.3170e-001, 8.9789e-002, 2.8480e-002, 2.6055e-002,...
-%!        8.3641e-003,  4.2362e-003,  3.1693e-003,  1.4739e-004,  2.9406e-004];
-%!     F= p(1)*exp(-p(2)*x)-y;
-%!     J=[exp(-p(2)*x),-p(1)*x.*exp(-p(2)*x)];
+%!  function [F,J] = myfun (p, x, y)
+%!    F = p(1) * exp (-p(2) * x) - y;
+%!    if nargout > 1   
+%!      J =[exp (- p(2) * x), - p(1) * x .* exp (- p(2) * x)];
+%!    endif
 %!  endfunction
-%!  %% independents and dependents:
-%!  x = 1:5;
-%!  y = [1, 2, 4, 7, 14];
-%!  %% initial values:
-%!  init = [.25; .25];
-%!  %% other configuration (default values):
-%!  tolerance = .0001;
-%!  max_iterations = 20;
-%!  weights = ones (1, 5);
-%!  dp = [.001; .001]; % bidirectional numeric gradient stepsize
-%!  dFdp = 'dfdp'; % function for gradient (numerical)
-%!
-%!  %% linear constraints, A.' * parametervector + B >= 0
-%!  A = [1; -1]; B = 0; % p(1) >= p(2);
-%!  options.inequc = {A, B};
 %!  
-%!  [c,res,resid,flag,out,lambda,jacob] = ... 
-%!      lsqnonlin(@(c)yhat(c,t)-y,[1 1],[0 0],[],opt)
+%!  %% independents
+%!  x = [1:10:100]'; 
+%!  %% observed data
+%!  y =[9.2160e-001, 3.3170e-001, 8.9789e-002, 2.8480e-002, 2.6055e-002,...
+%!     8.3641e-003,  4.2362e-003,  3.1693e-003,  1.4739e-004,  2.9406e-004]'; 
+%!  %% initial values:
+%!  p0=[0.8; 0.05];
+%!  %% bounds
+%!  lb=[0; 0]; ub=[];
+%!  %% Jacobian setting
+%!  opts = optimset ("Jacobian", "on")
+%!
+%!  [c,resnorm,residual,flag,output,lambda,jacob] = ... 
+%!      lsqnonlin(@(p) myfun(p, x, y), p0, lb,  ub, opts)
