@@ -54,7 +54,6 @@
 ##
 ## @code{FinDiffType}
 ##    "centered" or "forward" (Default) type finite differences estimation.
-##    Centered estimation takes twice as much time.   
 ##
 ## @code{FinDiffRelStep}
 ##    Step size factor. The default is sqrt(eps) for forward finite differences,
@@ -277,6 +276,7 @@ function user_interaction = compute_user_interaction (OutputFcn)
     user_interaction{i} = @(p, vals, state) deal (OutputFcn{i} (p, vals, state), {} ) ;
   endfor    
 endfunction
+
 %!test
 %! t = [0 .3 .8 1.1 1.6 2.3];
 %! y = [.82 .72 .63 .60 .55 .50];
