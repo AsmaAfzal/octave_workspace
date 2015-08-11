@@ -30,7 +30,57 @@
 ## The initial guess @var{x0} must be provided while the bounds @var{lb} and @var{ub}) can be set to
 ## the empty matrix (@code{[]}) if not given.
 ##
-## @var{options} can be set with @code{optimset}
+## @var{options} can be set with @code{optimset}. Follwing Matlab compatible options
+## are recognized:
+## 
+## @code{Algorithm}
+##    String specifying backend algorithm. Currently available "lm_svd_feasible"
+##    only. 
+##
+## @code{TolFun}
+##    Minimum fractional improvement in objective function in an iteration 
+##    (termination criterium). Default: 1e-6. 
+##
+## @code{TypicalX}
+##    Typical values of x. Default: 1.
+##
+## @code{MaxIter}
+##    Maximum number of iterations allowed. Default: 400.
+##
+## @code{Jacobian}
+##    If set to "on", the objective function must return a second output
+##    containing a user-specified Jacobian. The Jacobian is computed using
+##    finite differences otherwise. Default: "off"
+##
+## @code{FinDiffType}
+##    "centered" or "forward" (Default) type finite differences estimation.
+##    Centered estimation takes twice as much time.   
+##
+## @code{FinDiffRelStep}
+##    Step size factor. The default is sqrt(eps) for forward finite differences,
+##    and eps^(1/3) for central finite differences
+##
+## @code{OutputFcn}
+##    One or more user-defined functions, either as a function handle or as a
+##    cell array of function handles that an optimization function calls at each
+##    iteration. The function definition has the following form:
+##
+##    @code{stop = outfun(x, optimValues, state)}
+##    
+##    @code{x} is the point computed at the current iteration.
+##    @code{optimValues} is a structure containing data from the current
+##    iteration in the following fields:
+##    "iteration"- number of current iteration.
+##    "residual"- residuals.
+##    "fval"- value of the objective function.
+##
+## @code{FunValCheck}
+##    If "on", the output of user functions will be sanity-checked. Default: "off". 
+##
+## @code{Display}
+##    String indicating the degree of verbosity. Default: "off". 
+##    Currently only supported values are "off" (no messages) and "iter" 
+##    (some messages after each iteration).    
 ##
 ## Returned values:
 ##
@@ -42,7 +92,7 @@
 ## Scalar value of objective as squared EuclidianNorm(f(x)).
 ##
 ## @item residual
-## Value of solution residuals EuclidianNorm(f(x)).
+## Value of solution residuals f(x).
 ##
 ## @item exitflag
 ## Status of solution:
@@ -50,9 +100,6 @@
 ## @table @code
 ## @item 0
 ## Maximum number of iterations reached.
-##
-## @item 1
-## Solution x found.
 ##
 ## @item 2
 ## Change in x was less than the specified tolerance.
@@ -92,12 +139,14 @@ function varargout = lsqnonlin (varargin)
   
   if (nargs == 1 && ischar (varargin{1}) && strcmp (varargin{1}, "defaults"))
     varargout{1} = optimset ("FinDiffRelStep", [],...
-              "FinDiffType", "forward",...
-                             "TypicalX", TypicalX_default,...
+               "FinDiffType", "forward",...
+               "TypicalX", TypicalX_default,...
                "TolFun", TolFun_default,...
                "MaxIter", MaxIter_default,...
                "Display", "off",...
                "Jacobian", "off",...
+               "OutputFcn", {},...
+               "FunValCheck", "off"...
                "Algorithm", "lm_svd_feasible");
     return;
   endif
@@ -117,23 +166,22 @@ function varargout = lsqnonlin (varargin)
   in_args{2} = varargin{2}(:);
   
   if (nargs >= 4)
+    settings = struct (); 
     ## bounds are specified in a different way for nonlin_residmin
-    settings = optimset ("lbound", varargin{3}(:),
+    settings = optimset (settings, "lbound", varargin{3}(:),
                          "ubound", varargin{4}(:));
 
-    if (nargs == 5)
-      settings = optimset (settings, varargin{5});
-      
+    if (nargs == 5)      
       ## Jacobian function is specified in a different way for
       ## nonlin_residmin
-      if (strcmpi (optimget (settings, "Jacobian"), "on")) 
+      if (strcmpi (optimget (varargin{5}, "Jacobian"), "on")) 
           settings = optimset (settings,
                                "dfdp", @(p) computeJacob (modelfun, p));
       endif
 
       ## apply default values which are possibly different from those of
       ## nonlin_residmin
-      FinDiffType = optimget (settings, "FinDiffType", "forward");
+      FinDiffType = optimget (varargin{5}, "FinDiffType", "forward");
       if (strcmpi (FinDiffType, "forward"))
         FinDiffRelStep_default = sqrt (eps);
       elseif (strcmpi (FinDiffType, "central"))
@@ -142,16 +190,36 @@ function varargout = lsqnonlin (varargin)
         error ("unknown value of option 'FinDiffType': %s",
                FinDiffType);
       endif
-      FinDiffRelStep = optimget (settings, "FinDiffRelStep", FinDiffRelStep_default);
-      TolFun = optimget (settings, "TolFun", TolFun_default);
-      MaxIter = optimget (settings, "MaxIter", MaxIter_default);
-      TypicalX = optimget (settings, "TypicalX", TypicalX_default);
-      settings = optimset (settings,
-                           "FinDiffRelStep", FinDiffRelStep,
+      FinDiffRelStep = optimget (varargin{5}, "FinDiffRelStep", 
+                       FinDiffRelStep_default);
+      TolFun = optimget (varargin{5}, "TolFun", TolFun_default);
+      MaxIter = optimget (varargin{5}, "MaxIter", MaxIter_default);
+      TypicalX = optimget (varargin{5}, "TypicalX", TypicalX_default);
+      FunValCheck = optimget (varargin{5}, "FunValCheck", "off");
+      Display = optimget (varargin{5}, "Display", "off");
+      OutputFcn = optimget (varargin{5}, "OutputFcn", {});
+      
+      if (! strcmpi (Display, "off"))
+        if (strcmpi (Display, "iter-detailed") || strcmpi (Display, "final")...
+        || strcmpi (Display, "final-detailed"))
+            Display = "iter";            
+        endif
+      endif
+      
+      if (! isempty (OutputFcn))
+         ## Octave's user_interaction must return an additional informational 
+         ## output argument
+         user_interaction = compute_user_interaction (OutputFcn);
+      endif
+      
+      settings = optimset (settings, "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
                            "TolFun", TolFun,
                            "TypicalX", TypicalX,
-                           "MaxIter", MaxIter);
+                           "MaxIter", MaxIter,
+                           "FunValCheck", FunValCheck,
+                           "Display", Display,
+                           "user_interaction", user_interaction);
     endif
 
     in_args{3} = settings; 
@@ -170,7 +238,7 @@ function varargout = lsqnonlin (varargin)
   varargout{1} = residmin_out{1};
 
   if (out_args >= 2)
-    varargout{2} = sum (residmin_out{2} .^ 2);
+    varargout{2} = sumsq (residmin_out{2});
   endif
   
   if (out_args >= 3)
@@ -202,6 +270,13 @@ function Jacob = computeJacob (modelfun, p)
   [~, Jacob] = modelfun (p);
 endfunction
 
+function user_interaction = compute_user_interaction (OutputFcn)
+  n = numel (OutputFcn);
+  user_interaction = cell (1, n);
+  for i = 1:n;
+    user_interaction{i} = @(p, vals, state) deal (OutputFcn{i} (p, vals, state), {} ) ;
+  endfor    
+endfunction
 %!test
 %! t = [0 .3 .8 1.1 1.6 2.3];
 %! y = [.82 .72 .63 .60 .55 .50];
