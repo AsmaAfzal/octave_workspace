@@ -168,7 +168,7 @@
   ## right dimension and filled with 0)
   if (isempty (x0))
     x0 = zeros (n, 1);
-  elseif (numel (x0) != n)
+  elsecif (numel (x0) != n)
     error ("The initial guess has incorrect length");
   endif
   
