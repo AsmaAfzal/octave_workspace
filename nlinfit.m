@@ -113,7 +113,6 @@ function varargout = nlinfit (varargin)
   in_args{1} = varargin{3};
   in_args{2} = varargin{4}(:);
   in_args(3:4) = varargin(1:2);
-  settings = struct ();
   
   if (nargs >= 5)
     if (isempty (varargin{5}))
@@ -136,18 +135,16 @@ function varargout = nlinfit (varargin)
                            "TolFun", TolFun,...
                            "Display", Display,...
                            "MaxIter", MaxIter);
-    in_args{5} = settings;
     endif
-  endif
-  
-  if (nargs == 7)
-  ## Weights are specified in a different way for nonlin_curvefit
-    if (strcmpi (varargin{6}, "weights") ) 
-      settings = optimset (settings, "weights", varargin{7});
-      in_args{5} = settings;
-    else
-      error ("Unsupported Name-value pair input.")
-    endif   
+    if (nargs == 7)
+      ## Weights are specified in a different way for nonlin_curvefit
+      if (strcmpi (varargin{6}, "weights") ) 
+        settings = optimset (settings, "weights", varargin{7});
+      else
+        error ("Unsupported Name-value pair input.")
+      endif   
+    endif
+    in_args{5} = settings;
   endif
 
   n_out = max (1, min (out_args, 2)); 
