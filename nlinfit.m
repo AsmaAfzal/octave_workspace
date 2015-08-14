@@ -31,8 +31,27 @@
 ## @var{modelfun} should be specified as a function handle, which accepts two inputs: an array of coefficients and an array of independents- in that order.
 ## The first four input arguments must be provided with non-empty initial guess of the coefficients @var{beta0}. 
 ## @var{Y} and @var{X} must be the same size as the vector (or matrix) returned by @var{fun}.
-## @var{options} is a structure containing estimation algorithm options. It can be set using @code{statset}. Optional @var{Name}, 
-## @{Value} pair can be provided to set additional options. Currently the only applicable name-value pair is 'Weights', w, where w is the array of real positive weights .
+## @var{options} is a structure containing estimation algorithm options. It can be set using @code{statset}. 
+## Follwing Matlab compatible options are recognized:
+##
+## @code{TolFun}
+##    Minimum fractional improvement in objective function in an iteration 
+##    (termination criterium). Default: 1e-6. 
+##
+## @code{MaxIter}
+##    Maximum number of iterations allowed. Default: 400.
+##
+## @code{DerivStep}
+##    Step size factor. The default is eps^(1/3) for finite differences gradient 
+##    calculation.
+##
+## @code{Display}
+##    String indicating the degree of verbosity. Default: "off". 
+##    Currently only supported values are "off" (no messages) and "iter" 
+##    (some messages after each iteration).    
+##
+## Optional @var{Name}, @{Value} pair can be provided to set additional options. 
+## Currently the only applicable name-value pair is 'Weights', w, where w is the array of real positive weights .
 ##
 ## Returned values:
 ##
@@ -57,7 +76,8 @@
 ## where N is the number of observations and p is the number of estimated coefficients.
 ## @end table
 ##
-## This function calls Octave's @code{nonlin_curvefit} and @code{curvefit_stat} functions internally. 
+## This function is a compatibility wrapper. It calls the more general @code{nonlin_curvefit} 
+## and @code{curvefit_stat} functions internally. 
 ## 
 ## @end deftypefn
 
@@ -89,7 +109,7 @@ function varargout = nlinfit (varargin)
   
   out_args = nargout ();
   varargout = cell (1, out_args);
-    modelfun = varargin{3};
+  modelfun = varargin{3};
   in_args{1} = varargin{3};
   in_args{2} = varargin{4}(:);
   in_args(3:4) = varargin(1:2);
@@ -99,26 +119,34 @@ function varargout = nlinfit (varargin)
     if (isempty (varargin{5}))
       settings = struct ();
     else
-      settings = varargin{5};
-    endif
-    ## apply default values which are possibly different from those of
+    ## Apply default values which are possibly different from those of
     ## nonlin_curvefit
-    DerivStep = statget (settings, "DerivStep", DerivStep_default);
-    TolFun = statget (settings, "TolFun", TolFun_default); 
-    MaxIter = statget (settings, "MaxIter", MaxIter_default);
-    settings = optimset (settings, "FinDiffRelStep", DerivStep,...
+    DerivStep = statget (varargin{5}, "DerivStep", DerivStep_default);
+    TolFun = statget (varargin{5}, "TolFun", TolFun_default); 
+    MaxIter = statget (varargin{5}, "MaxIter", MaxIter_default);
+    Display = optimget (varargin{5}, "Display", "off");
+
+    if (! strcmpi (Display, "off"))
+      if (strcmpi (Display, "final"))
+          Display = "iter";
+      endif
+    endif
+    
+    settings = optimset ("FinDiffRelStep", DerivStep,...
                            "TolFun", TolFun,...
+                           "Display", Display,...
                            "MaxIter", MaxIter);
     in_args{5} = settings;
+    endif
   endif
   
   if (nargs == 7)
-  ## weights are specified in a different way for nonlin_curvefit
+  ## Weights are specified in a different way for nonlin_curvefit
     if (strcmpi (varargin{6}, "weights") ) 
       settings = optimset (settings, "weights", varargin{7});
       in_args{5} = settings;
     else
-      error ("Unidentified Name-value pair input.")
+      error ("Unsupported Name-value pair input.")
     endif   
   endif
 
@@ -132,7 +160,7 @@ function varargout = nlinfit (varargin)
 
   if (out_args >= 2)
     if (nargs == 7)
-     ## weighted residual
+     ## Weighted residual
       varargout{2} = sqrt (varargin{7}).* (in_args{4} - nlinfit_out{2});
     else
       varargout{2} = in_args{4} - nlinfit_out{2};
@@ -141,9 +169,11 @@ function varargout = nlinfit (varargin)
   
   if (out_args >= 3)
     info = curvefit_stat (modelfun, nlinfit_out{1}, in_args{3}, in_args{4},
-                                 optimset (settings, "ret_dfdp", true, "ret_covp", true, "objf_type", "wls"));
+                                 optimset (settings, "ret_dfdp", true,...
+                                 "ret_covp", true,...
+                                 "objf_type", "wls"));
     if (nargs == 7)
-      ## weighted Jacobian
+      ## Weighted Jacobian
       weights = repmat (varargin{7}, 1, length (in_args{2}));
       varargout{3} = sqrt (weights) .* info.dfdp;
     else
