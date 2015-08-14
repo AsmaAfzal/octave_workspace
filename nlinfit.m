@@ -83,7 +83,7 @@
 
 ## PKG_ADD: __all_stat_opts__ ("nlinfit");
 
-function varargout = nlinfit (varargin)
+function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
 
   nargs = nargin ();
   
@@ -99,31 +99,28 @@ function varargout = nlinfit (varargin)
     return;
   endif
   
-  if (nargs < 4 || nargs==6 || nargs > 7)
+  if (nargs==6 || nargs > 7)
     print_usage ();
   endif
   
-   if (! isreal (varargin{4}))
+   if (! isreal (beta0))
     error("Function does not accept complex inputs. Split into real and imaginary parts")
   endif
   
   out_args = nargout ();
   varargout = cell (1, out_args);
-  modelfun = varargin{3};
-  in_args{1} = varargin{3};
-  in_args{2} = varargin{4}(:);
-  in_args(3:4) = varargin(1:2);
-  
+  in_args = {modelfun, beta0(:), X, Y};
+
   if (nargs >= 5)
-    if (isempty (varargin{5}))
+    if (isempty (varargin{1}))
       settings = struct ();
     else
     ## Apply default values which are possibly different from those of
     ## nonlin_curvefit
-    DerivStep = statget (varargin{5}, "DerivStep", DerivStep_default);
-    TolFun = statget (varargin{5}, "TolFun", TolFun_default); 
-    MaxIter = statget (varargin{5}, "MaxIter", MaxIter_default);
-    Display = statget (varargin{5}, "Display", "off");
+    DerivStep = statget (varargin{1}, "DerivStep", DerivStep_default);
+    TolFun = statget (varargin{1}, "TolFun", TolFun_default); 
+    MaxIter = statget (varargin{1}, "MaxIter", MaxIter_default);
+    Display = statget (varargin{1}, "Display", "off");
 
     if (! strcmpi (Display, "off"))
       if (strcmpi (Display, "final"))
@@ -138,8 +135,12 @@ function varargout = nlinfit (varargin)
     endif
     if (nargs == 7)
       ## Weights are specified in a different way for nonlin_curvefit
-      if (strcmpi (varargin{6}, "weights") ) 
-        settings = optimset (settings, "weights", varargin{7});
+      if (strcmpi (varargin{2}, "weights") )
+        weights = varargin{3};
+        if (size(weights) != size(Y))
+           error ("Weights should be the same size as the observed output Y");
+        endif
+        settings = optimset (settings, "weights", weights);
       else
         error ("Unsupported Name-value pair input.")
       endif   
@@ -158,7 +159,7 @@ function varargout = nlinfit (varargin)
   if (out_args >= 2)
     if (nargs == 7)
      ## Weighted residual
-      varargout{2} = sqrt (varargin{7}).* (in_args{4} - nlinfit_out{2});
+      varargout{2} = sqrt (weights).* (in_args{4} - nlinfit_out{2});
     else
       varargout{2} = in_args{4} - nlinfit_out{2};
     endif
@@ -171,8 +172,8 @@ function varargout = nlinfit (varargin)
                                  "objf_type", "wls"));
     if (nargs == 7)
       ## Weighted Jacobian
-      weights = repmat (varargin{7}, 1, length (in_args{2}));
-      varargout{3} = sqrt (weights) .* info.dfdp;
+      replicated_weights = repmat (weights, 1, length (in_args{2}));
+      varargout{3} = sqrt (replicated_weights) .* info.dfdp;
     else
       varargout{3} = info.dfdp;
     endif
