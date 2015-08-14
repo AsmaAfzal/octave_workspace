@@ -123,7 +123,7 @@ function varargout = nlinfit (varargin)
     DerivStep = statget (varargin{5}, "DerivStep", DerivStep_default);
     TolFun = statget (varargin{5}, "TolFun", TolFun_default); 
     MaxIter = statget (varargin{5}, "MaxIter", MaxIter_default);
-    Display = optimget (varargin{5}, "Display", "off");
+    Display = statget (varargin{5}, "Display", "off");
 
     if (! strcmpi (Display, "off"))
       if (strcmpi (Display, "final"))
