@@ -16,14 +16,16 @@ f = @(x) -x(1) * x(2) * x(3);
 A = [-1 -2 -2; ...
       1  2  2];
 b = [0;72];
-x0 = [0;10;10];    % Starting guess at the solution
+x0 = [10;10;10];    % Starting guess at the solution
 S=-A';
-[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
+%[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
 %[x2,fval2] = nonlin_min( f, x0, optimset ("inequc",{S,b},"Algorithm","octave_sqp") )
 %
-settings = optimset("Algorithm","octave_sqp");
-[x,fval,cvg] = fmincon(f,x0,A,b)
-[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[],[],settings) 
+%settings = optimset("Algorithm","octave_sqp");
+%[x,fval,cvg] = fmincon(f,x0,A,b)
+%[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[],[],settings) 
+opts=optimset("TolFun",1e-1)
+[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[],[],opts) 
 
 %***********Equality con****
 %f=@(X)-X(1)*X(2)^2*X(3)^3*X(4)^4;

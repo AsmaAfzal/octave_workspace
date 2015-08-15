@@ -92,7 +92,7 @@
 ##
 ## @end table
 ##
-## This function calls Octave's @code{nonlin_min} function internally.
+## This function is a compatibility wrapper. It calls the more general @code{nonlin_min} function internally.
 ## @end deftypefn
 
 ## PKG_ADD: __all_opts__ ("fmincon");
@@ -114,6 +114,7 @@ function varargout = fmincon (modelfun, x0, varargin)
                "Display", "off",...
                "GradObj", "off",...
                "Hessian", "dfdp",...
+               "OutputFcn", {}, ...
                "GradConstr", "off",...
                "Algorithm", "lm_feasible");
     return;
@@ -159,29 +160,30 @@ function varargout = fmincon (modelfun, x0, varargin)
   endif
     
   if (nargs == 10)
-    settings = optimset (settings, varargin{8});
     ## Jacobian function is specified in a different way for
     ## nonlin_min
-    if (strcmpi (optimget (settings, "GradObj"), "on")) 
+    settings = struct ();
+    if (strcmpi (optimget (varargin{8}, "GradObj"), "on")) 
       settings = optimset (settings,
                        "objf_grad", @(p) computeGrad (modelfun, p));
     endif
     ## Hessian function is specified in a different way for
     ## nonlin_min
-    Hessian = optimget (settings, "Hessian");
+    Hessian = optimget (varargin{8}, "Hessian");
     if (strcmpi (Hessian, "user-supplied") || strcmpi (Hessian, "on")) 
       settings = optimset (settings,
                        "objf_hessian", @(p) computeHess (modelfun, p));
     endif
     ## Hessian function is specified in a different way for
     ## nonlin_min
-    if (strcmpi (optimget (settings, "GradConstr"), "on")) 
+    if (any (strcmp (fieldnames (nonlin_min ("defaults")), "GradConstr")) &&...
+    strcmpi (optimget (varargin{8}, "GradConstr"), "on")) 
       equc{4} = @(p) computeGC (modelfun, p);
       inequc{4} =  @(p) computeGCeq (modelfun, p);
     endif
      ## apply default values which are possibly different from those of
      ## nonlin_min
-     FinDiffType = optimget (settings, "FinDiffType", "forward");
+     FinDiffType = optimget (varargin{8}, "FinDiffType", "forward");
      if (strcmpi (FinDiffType, "forward"))
        FinDiffRelStep_default = sqrt (eps);
      elseif (strcmpi (FinDiffType, "central"))
@@ -190,20 +192,37 @@ function varargout = fmincon (modelfun, x0, varargin)
        error ("unknown value of option 'FinDiffType': %s",
                FinDiffType);
      endif
-     FinDiffRelStep = optimget (settings, "FinDiffRelStep", FinDiffRelStep_default);
-     TolFun = optimget (settings, "TolFun", TolFun_default);
-     MaxIter = optimget (settings, "MaxIter", MaxIter_default);
-     TypicalX = optimget (settings, "TypicalX", TypicalX_default);
+     FinDiffRelStep = optimget (varargin{8}, "FinDiffRelStep", FinDiffRelStep_default);
+     TolFun = optimget (varargin{8}, "TolFun", TolFun_default);
+     MaxIter = optimget (varargin{8}, "MaxIter", MaxIter_default);
+     TypicalX = optimget (varargin{8}, "TypicalX", TypicalX_default);
+     Display = optimget (varargin{8}, "Display", "off");
+     if (! iscell (OutputFcn = optimget (varargin{8}, "OutputFcn", {})))
+       OutputFcn = {OutputFcn};
+     endif
+
+     if (! strcmpi (Display, "off"))
+       if (strcmpi (Display, "iter-detailed") || strcmpi (Display, "final")...
+       || strcmpi (Display, "final-detailed"))
+           Display = "iter";
+       endif
+     endif
+     ## 'user_interaction' must return an additional informational
+     ## output argument
+     user_interaction = compute_user_interaction (OutputFcn); 
+      
      settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
                            "TolFun", TolFun,
                            "TypicalX", TypicalX,
-                           "MaxIter", MaxIter);
+                           "MaxIter", MaxIter,
+                           "Display", Display,
+                           "user_interaction", user_interaction);
   endif
   
   if ( out_args >= 6)
-    if (any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_objf_grad")) ||...
+    if (any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_objf_grad")) &&...
     any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_hessian")))  
       settings = optimset (settings, "ret_objf_grad", true,
                            "ret_hessian", true);
@@ -252,7 +271,15 @@ function varargout = fmincon (modelfun, x0, varargin)
 
   endfunction
 
-function Grad = computeGrad (modelfun, p)
+function user_interaction = compute_user_interaction (OutputFcn)
+  n = numel (OutputFcn);
+  user_interaction = cell (1, n);
+  for i = 1:n;
+    user_interaction{i} = @(p, vals, state) deal (OutputFcn{i} (p, vals, state), {} ) ;
+  endfor
+endfunction
+  
+ function Grad = computeGrad (modelfun, p)
   [~, Grad] = modelfun (p);
 endfunction
 
