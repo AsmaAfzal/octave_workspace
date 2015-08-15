@@ -6,18 +6,18 @@ clear all
 %A = [-1 -3; 2 5; 3 4];
 %l = zeros(2,1);
 %b = [-15; 100; 80];
-%quadprog(H,f)
-%quadprog(H,f,A,b)
+%quadprog(H,f);
+%quadprog(H,f,A,b);
 %[x,fval] = quadprog(H,f,A,b,[],[],l,[])
 %[x,fval,exitflag] = quadprog(H,f,A,b,[],[],l,[])
-%[x,fval,exitflag,output] = quadprog(H,f,A,b,[],[],l,[])
-%[ x,fval,exitflag,output,lambda] = quadprog(H,f,A,b,[],[],l,[])
+%%[x,fval,exitflag,output] = quadprog(H,f,A,b,[],[],l,[])
+%[ x,fval,exitflag,output,lam] = quadprog(H,f,A,b,[],[],l,[])
 %%
 %[x,fval,exitflag,output,lambda]=quadprog(H,f,A,b)
 %[x, obj, info, lambda] = qp ([], H, f, [], [],[],[],[],A,b)
 
 %%***************
-%
+%%
 %x=linspace(0,5);
 %a= [1.3130    0.6808    1.3137   -2.8538    2.2976    1.2959    0.6999   -0.5095   -0.6078   -0.0091];
 %for i=1:10
@@ -32,10 +32,11 @@ clear all
 %HH=[f f f H];
 %Aeq=[xx eye(10)];beq=y';
 %A=[];b=[];
-%[X,fval,fl,out,lm]=quadprog(HH,f,A,b,Aeq,beq) 
+%[X,fval,exitflag,output,lambda]=quadprog(HH,f,A,b,Aeq,beq) 
 
 %******************
-
+%clc
+%clear all
 % H = 1;  q = 0;                # objective: x -> 0.5 x^2
 % A = 1;  lb =[];  ub = 10;   # constraint: x >= 1
 % x0 = 0;                       # infeasible initial guess
@@ -66,11 +67,11 @@ lb = -0.1*ones(4,1);
 %lb(4)=0.3;
 ub = ones(4,1);
 H=C'*C;f=-C'*d;
-%[x,obj,flag,op,lambda]=quadprog(H,f,A,b,Aeq,beq,lb,ub)
-[x,obj,flag,op,lambda]=quadprog(C'*C,-C'*d,[],[],[],[],lb,ub)
+[x,obj,flag,op,lambda]=quadprog(H,f,A,b,Aeq,beq,lb,ub)
+%[x,obj,flag,op,lambda]=quadprog(C'*C,-C'*d,[],[],[],[],lb,ub);
 %[x, obj_qp, INFO, lambda] = qp ([],H,f,Aeq,beq,lb,ub,[],A,b)
-%
-[x, obj_qp, INFO, lambda] = qp ([],H,f,[],[],lb,ub)
+%%
+%[x, obj_qp, INFO, lambda] = qp ([],H,f,[],[],lb,ub);
 
 %[x,obj,flag,op,lambda]=quadprog(C'*C,-C'*d,A,b,Aeq,beq);
 %lambda

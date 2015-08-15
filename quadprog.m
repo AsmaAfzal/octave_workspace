@@ -168,35 +168,33 @@
   ## right dimension and filled with 0)
   if (isempty (x0))
     x0 = zeros (n, 1);
-  elsecif (numel (x0) != n)
+  elseif (numel (x0) != n)
     error ("The initial guess has incorrect length");
   endif
   
   lambda = struct ("lower", [], "upper", [], "eqlin", [], "ineqlin", []);
   
   ## Inequality constraint matrices
-  if (nargs > 2)
-    A = zeros (0, n);
-    b = zeros (0, 1); 
-    if (! isempty (A_in) && ! isempty (b_in))
-      [dimA_in, n1] = size (A_in);
-      if (n1 != n)
-        error ("Inequality constraint matrix has incorrect column dimension");
-      endif
-      if (numel (b_in) != dimA_in)
-        error ("Inequality constraint matrix and upper bound vector inconsistent");
-      endif 
-      A = [A; -A_in];
-      b = [b; -b_in];
-      idx_ineq = isinf (b_in) & b_in < 0;
-      lambda.ineqlin = zeros (n, 0);
-      ## Discard inequality constraints that have -Inf bounds since those
-      ## will never be active but keep the index for ordering of lambda. 
-      b(idx_ineq) = [];
-      A(idx_ineq,:) = [];
-      elseif (isempty (A_in) && ! isempty (b_in) || ! isempty (A_in) && isempty (b_in))
-        error("The number of rows in A must be the same as the length of b")    
+  A = zeros (0, n);
+  b = zeros (0, 1); 
+  if (! isempty (A_in) && ! isempty (b_in))
+    [dimA_in, n1] = size (A_in);
+    if (n1 != n)
+      error ("Inequality constraint matrix has incorrect column dimension");
     endif
+    if (numel (b_in) != dimA_in)
+      error ("Inequality constraint matrix and upper bound vector inconsistent");
+    endif 
+    A = [A; -A_in];
+    b = [b; -b_in];
+    idx_ineq = isinf (b_in) & b_in < 0;
+    lambda.ineqlin = zeros (n, 0);
+    ## Discard inequality constraints that have -Inf bounds since those
+    ## will never be active but keep the index for ordering of lambda. 
+    b(idx_ineq) = [];
+    A(idx_ineq,:) = [];
+  elseif (isempty (A_in) && ! isempty (b_in) || ! isempty (A_in) && isempty (b_in))
+    error("The number of rows in A must be the same as the length of b")    
   endif
   ## Equality constraint matrices
   if (isempty (Aeq) || isempty (beq))
@@ -239,9 +237,9 @@
       lambda.upper = zeros (0, n);
    endif
    count_not_ineq = 0;
+   idx_bounds_ineq = true(n,1);
    if (! isempty (lb) && ! isempty (ub))
       rtol = sqrt (eps);
-      idx_bounds_ineq = true(n,1);
       A_lb =[];
       for i = 1:n;
         if (abs (lb (i) - ub(i)) < rtol*(1 + max (abs (lb(i) + ub(i)))))
@@ -281,8 +279,8 @@
     rtol = sqrt (eps);
   endif
 
-  eq_infeasible = (n_eq > 0 && norm (Aeq*x0-beq) > rtol*(1+abs (beq)));
-  in_infeasible = (n_in > 0 && any (A*x0-b < -rtol*(1+abs (b))));
+  eq_infeasible = (n_eq > 0 && norm (Aeq * x0 - beq) > rtol * (1 + abs (beq)));
+  in_infeasible = (n_in > 0 && any (A * x0 - b < -rtol * (1 + abs (b))));
 
   exitflag = 0;
   
@@ -393,37 +391,74 @@
   endif
   
   if (n_out >= 5 && exitflag == 0)
-    lm_idx=1; tmp_not_ineq = 0;
+    lm_idx=1; lambda_not_ineq = [];
     if (nargs > 4 && (! isempty (varargin{3}) && ! isempty (varargin{4}) || count_not_ineq > 0))      
-      lambda.eqlin = -1 * qp_lambda(lm_idx:lm_idx + n_eq - count_not_ineq - 1);
-      tmp_not_ineq = -1 * qp_lambda(lm_idx + n_eq - count_not_ineq: lm_idx + n_eq -1);
+      lambda.eqlin = qp_lambda(lm_idx:lm_idx + n_eq - count_not_ineq - 1);
+      lambda_not_ineq = qp_lambda(lm_idx + n_eq - count_not_ineq: lm_idx + n_eq -1);
       lm_idx = lm_idx + n_eq;
     endif
     
     if (nargs > 2 && ! isempty (varargin{1}) && ! isempty (varargin{2}))
-         ineq_tmp = qp_lambda(lm_idx:lm_idx + dimA_in - 1 - sum (idx_ineq));
-         lambda.ineqlin = ineq_tmp;
-         lm_idx = lm_idx + dimA_in - sum (idx_ineq);
+      ineq_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ineq) - 1);
+      lambda.ineqlin = ineq_tmp;
+      lm_idx = lm_idx + sum (! idx_ineq);
     endif
     
     if (nargs > 6 && ! isempty (varargin{5}))  
-      lb_tmp = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_lb) - count_not_ineq);
+      lb_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_lb) - count_not_ineq - 1);
       idx = idx_bounds_ineq & ! idx_lb;
       lambda.lower(idx) = lb_tmp;
       lambda.lower(! idx) = 0;
       lambda.lower = lambda.lower(:);
-      lm_idx = lm_idx + n - sum (idx_lb) - count_not_ineq;
+      lm_idx = lm_idx + sum (! idx_lb) - count_not_ineq;
     endif
     
     if (nargs > 7 && ! isempty (varargin{6}))      
-      ub_tmp = qp_lambda(lm_idx:lm_idx + n - 1 - sum (idx_ub) - count_not_ineq);
+      ub_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ub) - count_not_ineq - 1);
       idx = idx_bounds_ineq & ! idx_ub;
       lambda.upper(idx) = ub_tmp;
       lambda.upper(! idx) = 0;
-      lambda.upper(! idx_bounds_ineq) = tmp_not_ineq;
+      lambda.upper(! idx_bounds_ineq) = lambda_not_ineq;
       lambda.upper = lambda.upper(:);
     endif             
-    varargout{5} = lambda;    
+    varargout{5}.lower = lambda.lower;
+    varargout{5}.upper = lambda.upper;
+    varargout{5}.eqlin = lambda.eqlin;
+    varargout{5}.ineqlin = lambda.ineqlin;        
   endif
  
 endfunction
+
+%!test
+%! H= diag([1; 0]);
+%! f = [3; 4];
+%! A= [-1 -3; 2 5; 3 4];
+%! b = [-15; 100; 80];
+%! l= zeros(2,1);
+%! [x,fval,exitflag,output] = quadprog(H,f,A,b,[],[],l,[])
+%! assert(x,[0;5])
+%! assert(fval,20)
+%! assert(exitflag,1)
+%! assert(output.iterations,1)
+
+%!demo
+%!  C = [0.9501    0.7620    0.6153    0.4057
+%!      0.2311    0.4564    0.7919    0.9354
+%!      0.6068    0.0185    0.9218    0.9169
+%!      0.4859    0.8214    0.7382    0.4102
+%!      0.8912    0.4447    0.1762    0.8936];
+%!  %% Linear Inequality Constraints
+%!  d = [0.0578; 0.3528; 0.8131; 0.0098; 0.1388];
+%!  A =[0.2027    0.2721    0.7467    0.4659
+%!      0.1987    0.1988    0.4450    0.4186
+%!      0.6037    0.0152    0.9318    0.8462];
+%!  b =[0.5251; 0.2026; 0.6721];
+%!  %% Linear Equality Constraints
+%!  Aeq = [3 5 7 9];
+%!  beq = 4;
+%!  %% Bound constraints
+%!  lb = -0.1*ones(4,1);
+%!  ub = ones(4,1);
+%!  H = C' * C;
+%!  f = -C' * d;
+%!  [x, obj, flag, output, lambda]=quadprog (H, f, A, b, Aeq, beq, lb, ub)
