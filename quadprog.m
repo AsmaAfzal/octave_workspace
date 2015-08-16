@@ -336,7 +336,7 @@
               && all (abs (P(n-n_eq+1:end)) < rtol * (1 + norm (btmp))))
             ## We found a feasible starting point
             if (n_eq > 0)
-              x0 = xbar + Z*P(1:n-n_eq);
+              x0 = xbar + Z * P(1:n-n_eq);
             else
               x0 = P(1:n);
             endif
