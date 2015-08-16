@@ -25,7 +25,7 @@
 ## @example
 ## @group
 ## min f(x)
-##  x   
+##  x
 ## @end group
 ## @end example
 ## subject to
@@ -39,12 +39,12 @@
 ## @end group
 ## @end example
 ##
-## @var{fun} is the scalar objective function to be minimized. @var{A} and @var{Aeq} are the linear constraint matrices and @var{b} and @var{beq} 
-## are the corresponding vectors. @var{nonlcon} is the function computing the nonlinear inequality and equality constraints. This function accepts 
-## the vector @var{x} as input and gives the two output vectors @var{c(x)} and @var{ceq(x)}. 
-## @var{options} is a structure containing estimation algorithm options. It can be set using @code{optimset}. If the option @code{GradObj} is set to 
-## @code{on}, @var{fun} must return a second output argument containing the gradient vector, @code{g(x)}. If the option @code{Hessian} is set to 
-## @code{user-supplied}, @var{fun} must return a third output argument containing the hessian matrix, @code{h(x)}. If the option @code{GradConstr} is set to 
+## @var{fun} is the scalar objective function to be minimized. @var{A} and @var{Aeq} are the linear constraint matrices and @var{b} and @var{beq}
+## are the corresponding vectors. @var{nonlcon} is the function computing the nonlinear inequality and equality constraints. This function accepts
+## the vector @var{x} as input and gives the two output vectors @var{c(x)} and @var{ceq(x)}.
+## @var{options} is a structure containing estimation algorithm options. It can be set using @code{optimset}. If the option @code{GradObj} is set to
+## @code{on}, @var{fun} must return a second output argument containing the gradient vector, @code{g(x)}. If the option @code{Hessian} is set to
+## @code{user-supplied}, @var{fun} must return a third output argument containing the hessian matrix, @code{h(x)}. If the option @code{GradConstr} is set to
 ## @code{on}, @var{nonlcon} must also return, in the third and fourth output arguments, GC, the gradient of c(x), and GCeq, the gradient of ceq(x).
 ##
 ## Returned values:
@@ -72,7 +72,7 @@
 ## @item 3
 ## Change in the objective function was less than the specified tolerance.
 ##
-## @item -1 
+## @item -1
 ## Output function terminated the algorithm.
 ## @end table
 ##
@@ -99,7 +99,7 @@
 
 function varargout = fmincon (modelfun, x0, varargin)
   nargs = nargin ();
-  
+
   TolFun_default = 1e-6;
   MaxIter_default = 400;
   TypicalX_default = 1;
@@ -119,11 +119,11 @@ function varargout = fmincon (modelfun, x0, varargin)
                "Algorithm", "lm_feasible");
     return;
   endif
-  
+
   if (nargs < 4 || nargs == 5  || nargs == 7  || nargs > 10)
     print_usage ();
   endif
-  
+
   out_args = nargout ();
   varargout = cell (1, out_args);
   in_args(1:2) = {modelfun, x0};
@@ -133,7 +133,7 @@ function varargout = fmincon (modelfun, x0, varargin)
   ## linear constraints are specified in a different way for nonlin_min
   ineq_index = 1;
   if (~ isempty (varargin{1}) && ~ isempty (varargin{2}) )
-     inequc(1:2) = {-1 * varargin{1}.', varargin{2}}; 
+     inequc(1:2) = {-1 * varargin{1}.', varargin{2}};
      ineq_index = 3;
   end
 
@@ -142,9 +142,9 @@ function varargout = fmincon (modelfun, x0, varargin)
      if (~ isempty (varargin{3}) && ~ isempty (varargin{4}) )
         equc(1:2) = {-1 * varargin{3}.', varargin{4}};
         eq_index = 3;
-     end  
+     end
   endif
-  
+
   if (nargs >= 8)
      ## bounds are specified in a different way for nonlin_min
      settings = optimset ("lbound", varargin{5}(:),
@@ -158,26 +158,26 @@ function varargout = fmincon (modelfun, x0, varargin)
         equc{eq_index} = @(p) computeCeq (nonlcon, p);
      endif
   endif
-    
+
   if (nargs == 10)
     ## Jacobian function is specified in a different way for
     ## nonlin_min
     settings = struct ();
-    if (strcmpi (optimget (varargin{8}, "GradObj"), "on")) 
+    if (strcmpi (optimget (varargin{8}, "GradObj"), "on"))
       settings = optimset (settings,
                        "objf_grad", @(p) computeGrad (modelfun, p));
     endif
     ## Hessian function is specified in a different way for
     ## nonlin_min
     Hessian = optimget (varargin{8}, "Hessian");
-    if (strcmpi (Hessian, "user-supplied") || strcmpi (Hessian, "on")) 
+    if (strcmpi (Hessian, "user-supplied") || strcmpi (Hessian, "on"))
       settings = optimset (settings,
                        "objf_hessian", @(p) computeHess (modelfun, p));
     endif
     ## Hessian function is specified in a different way for
     ## nonlin_min
     if (any (strcmp (fieldnames (nonlin_min ("defaults")), "GradConstr")) &&...
-    strcmpi (optimget (varargin{8}, "GradConstr"), "on")) 
+    strcmpi (optimget (varargin{8}, "GradConstr"), "on"))
       equc{4} = @(p) computeGC (modelfun, p);
       inequc{4} =  @(p) computeGCeq (modelfun, p);
     endif
@@ -209,8 +209,8 @@ function varargout = fmincon (modelfun, x0, varargin)
      endif
      ## 'user_interaction' must return an additional informational
      ## output argument
-     user_interaction = compute_user_interaction (OutputFcn); 
-      
+     user_interaction = compute_user_interaction (OutputFcn);
+
      settings = optimset (settings,
                            "FinDiffRelStep", FinDiffRelStep,
                            "FinDiffType", FinDiffType,
@@ -220,21 +220,21 @@ function varargout = fmincon (modelfun, x0, varargin)
                            "Display", Display,
                            "user_interaction", user_interaction);
   endif
-  
+
   if ( out_args >= 6)
     if (any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_objf_grad")) &&...
-    any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_hessian")))  
+    any (strcmp (fieldnames (nonlin_min ("defaults")), "ret_hessian")))
       settings = optimset (settings, "ret_objf_grad", true,
                            "ret_hessian", true);
     endif
   endif
-  
-  settings = optimset (settings, "inequc", inequc, "equc", equc); 
-  
-  in_args{3} = settings; 
 
-  n_out = max (1, min (out_args, 4)); 
-  
+  settings = optimset (settings, "inequc", inequc, "equc", equc);
+
+  in_args{3} = settings;
+
+  n_out = max (1, min (out_args, 4));
+
   min_out = cell (1, n_out);
 
   [min_out{:}] =  nonlin_min (in_args{:});
@@ -244,7 +244,7 @@ function varargout = fmincon (modelfun, x0, varargin)
   if (out_args >= 2)
     varargout{2} = min_out{2};
   endif
-  
+
   if (out_args >= 3)
     varargout{3} = min_out{3};
   endif
@@ -256,7 +256,7 @@ function varargout = fmincon (modelfun, x0, varargin)
       if (out_args >= 5 && isstruct (min_out{4}.lambda))
         varargout{5} = min_out{4}.lambda;
       endif
-    endif  
+    endif
     if (isfield (outp, {"objf_grad", "hessian"}))
       outp = rmfield (outp, {"objf_grad", "hessian"});
       if (out_args >= 6)
@@ -264,7 +264,7 @@ function varargout = fmincon (modelfun, x0, varargin)
       endif
       if (out_args >= 7)
         varargout{7} = min_out{4}.hessian;
-      endif  
+      endif
     endif
     varargout{4} = outp;
   endif
@@ -278,7 +278,7 @@ function user_interaction = compute_user_interaction (OutputFcn)
     user_interaction{i} = @(p, vals, state) deal (OutputFcn{i} (p, vals, state), {} ) ;
   endfor
 endfunction
-  
+
  function Grad = computeGrad (modelfun, p)
   [~, Grad] = modelfun (p);
 endfunction
@@ -294,7 +294,7 @@ endfunction
 function Ceq = computeCeq (nonlcon, p)
  [~, Ceq] = nonlcon (p);
 endfunction
- 
+
 function GC =  computeGC (nonlcon, p)
   [~, ~, GC] = nonlcon (p);
 endfunction
