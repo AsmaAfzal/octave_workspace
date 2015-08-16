@@ -39,7 +39,7 @@
 ## @var{lb} <= @var{x} <= @var{ub}.
 ## @end group
 ## @end example
-## 
+##
 ## The initial guess @var{x0} and the constraint arguments (@var{A} and
 ## @var{b}, @var{Aeq} and @var{beq}, @var{lb} and @var{ub}) can be set to
 ## the empty matrix (@code{[]}) if not given.  If the initial guess
@@ -83,7 +83,7 @@
 ## @code{iterations}, the number of used iterations.
 ##
 ## @item lambda
-## Structure containing Lagrange multipliers corresponding to the 
+## Structure containing Lagrange multipliers corresponding to the
 ## constraints.
 ##
 ## @end table
@@ -99,7 +99,7 @@
     varargout{1} = optimset ("MaxIter", 200);
     return;
   endif
- 
+
   nargs = nargin;
   n_out = nargout ();
   varargout = cell (1, n_out);
@@ -107,7 +107,7 @@
   if (nargs < 2 || nargs == 3 || nargs == 5 || nargs == 7 || nargs > 10)
     print_usage();
   endif
-  
+
   ## Checking the quadratic penalty
   if (! issquare (H))
     error ("Quadratic penalty matrix not square");
@@ -116,7 +116,7 @@
     H = (H + H')/2;
   endif
   n = rows (H);
-  
+
   ## Linear penalty.
   if (isempty (f))
     f = zeros (n, 1);
@@ -139,15 +139,15 @@
     Aeq = [];
     beq = [];
   endif
- 
+
   if (nargs > 6)
     lb = varargin{5};
-    ub = varargin{6};  
+    ub = varargin{6};
   else
     lb = [];
-    ub = [];    
+    ub = [];
   endif
-  
+
   if (nargs >= 9)
     x0 = varargin{7};
   else
@@ -155,15 +155,15 @@
   endif
 
   options = struct ();
-  
+
   if (nargs == 10)
     if (isstruct (varargin{8}))
       options = varargin{8};
     endif
   endif
-  
+
   maxit = optimget (options, "MaxIter", 200);
-  
+
   ## Checking the initial guess (if empty it is resized to the
   ## right dimension and filled with 0)
   if (isempty (x0))
@@ -171,12 +171,12 @@
   elseif (numel (x0) != n)
     error ("The initial guess has incorrect length");
   endif
-  
+
   lambda = struct ("lower", [], "upper", [], "eqlin", [], "ineqlin", []);
-  
+
   ## Inequality constraint matrices
   A = zeros (0, n);
-  b = zeros (0, 1); 
+  b = zeros (0, 1);
   if (! isempty (A_in) && ! isempty (b_in))
     [dimA_in, n1] = size (A_in);
     if (n1 != n)
@@ -184,17 +184,17 @@
     endif
     if (numel (b_in) != dimA_in)
       error ("Inequality constraint matrix and upper bound vector inconsistent");
-    endif 
+    endif
     A = [A; -A_in];
     b = [b; -b_in];
     idx_ineq = isinf (b_in) & b_in < 0;
     lambda.ineqlin = zeros (n, 0);
     ## Discard inequality constraints that have -Inf bounds since those
-    ## will never be active but keep the index for ordering of lambda. 
+    ## will never be active but keep the index for ordering of lambda.
     b(idx_ineq) = [];
     A(idx_ineq,:) = [];
   elseif (isempty (A_in) && ! isempty (b_in) || ! isempty (A_in) && isempty (b_in))
-    error("The number of rows in A must be the same as the length of b")    
+    error("The number of rows in A must be the same as the length of b")
   endif
   ## Equality constraint matrices
   if (isempty (Aeq) || isempty (beq))
@@ -210,9 +210,9 @@
       error ("Equality constraint matrix and vector have inconsistent dimension");
     endif
     lambda.eqlin = zeros (n, 0);
-  endif  
-    
-  ## Bound constraints   
+  endif
+
+  ## Bound constraints
   n_in = 0;
   if (nargs > 5)
     if (! isempty (lb))
@@ -223,7 +223,7 @@
         b = [b; lb];
       endif
       idx_lb = isinf (lb) & lb < 0;
-      lambda.lower = zeros (0, n); 
+      lambda.lower = zeros (0, n);
     endif
 
    if (! isempty (ub))
@@ -262,7 +262,7 @@
       b = [b; lb; -ub];
     endif
   endif
- 
+
   ## Now we should have the following QP:
   ##
   ##   min_x  0.5*x'*H*x + x'*q
@@ -283,7 +283,7 @@
   in_infeasible = (n_in > 0 && any (A * x0 - b < -rtol * (1 + abs (b))));
 
   exitflag = 0;
-  
+
   if (eq_infeasible || in_infeasible)
       ## The initial guess is not feasible.
       ## First define xbar that is feasible with respect to the equality
@@ -359,18 +359,18 @@
     ## The initial (or computed) guess is feasible.
     ## We call the solver.
      [x, qp_lambda, exitflag, iter] = __qp__ (x0, H, f, Aeq, beq, A, b, maxit);
-  
+
   else
     iter = 0;
     x = x0;
   endif
- 
+
  varargout{1} = x;
- 
+
   if (n_out >= 2)
     varargout{2} = 0.5 * x' * H * x + f' * x;;
   endif
- 
+
   if (n_out >= 3)
     switch (exitflag)
       case 0
@@ -385,26 +385,26 @@
         varargout{3} = -2;
     endswitch
   endif
-   
+
   if (n_out >= 4)
     varargout{4}.iterations = iter;
   endif
-  
+
   if (n_out >= 5 && exitflag == 0)
     lm_idx=1; lambda_not_ineq = [];
-    if (nargs > 4 && (! isempty (varargin{3}) && ! isempty (varargin{4}) || count_not_ineq > 0))      
+    if (nargs > 4 && (! isempty (varargin{3}) && ! isempty (varargin{4}) || count_not_ineq > 0))
       lambda.eqlin = qp_lambda(lm_idx:lm_idx + n_eq - count_not_ineq - 1);
       lambda_not_ineq = qp_lambda(lm_idx + n_eq - count_not_ineq: lm_idx + n_eq -1);
       lm_idx = lm_idx + n_eq;
     endif
-    
+
     if (nargs > 2 && ! isempty (varargin{1}) && ! isempty (varargin{2}))
       ineq_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ineq) - 1);
       lambda.ineqlin = ineq_tmp;
       lm_idx = lm_idx + sum (! idx_ineq);
     endif
-    
-    if (nargs > 6 && ! isempty (varargin{5}))  
+
+    if (nargs > 6 && ! isempty (varargin{5}))
       lb_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_lb) - count_not_ineq - 1);
       idx = idx_bounds_ineq & ! idx_lb;
       lambda.lower(idx) = lb_tmp;
@@ -412,21 +412,21 @@
       lambda.lower = lambda.lower(:);
       lm_idx = lm_idx + sum (! idx_lb) - count_not_ineq;
     endif
-    
-    if (nargs > 7 && ! isempty (varargin{6}))      
+
+    if (nargs > 7 && ! isempty (varargin{6}))
       ub_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ub) - count_not_ineq - 1);
       idx = idx_bounds_ineq & ! idx_ub;
       lambda.upper(idx) = ub_tmp;
       lambda.upper(! idx) = 0;
       lambda.upper(! idx_bounds_ineq) = lambda_not_ineq;
       lambda.upper = lambda.upper(:);
-    endif             
+    endif
     varargout{5}.lower = lambda.lower;
     varargout{5}.upper = lambda.upper;
     varargout{5}.eqlin = lambda.eqlin;
-    varargout{5}.ineqlin = lambda.ineqlin;        
+    varargout{5}.ineqlin = lambda.ineqlin;
   endif
- 
+
 endfunction
 
 %!test
