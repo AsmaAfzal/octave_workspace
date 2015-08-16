@@ -22,14 +22,14 @@
 ## Solve nonlinear least-squares (nonlinear data-fitting) problems
 ## @example
 ## @group
-## min sum [EuclidianNorm (f(x,xdata(i)) - ydata(i) )] .^ 2
-##  x     i
+## min [EuclidianNorm (f(x, xdata) - ydata)] .^ 2
+##  x
 ## @end group
 ## @end example
 ##
 ## The first four input arguments must be provided with non-empty initial guess @var{x0}. For a given input @var{xdata}, @var{ydata} is the observed output.
 ## @var{ydata} must be the same size as the vector (or matrix) returned by @var{fun}. The optional bounds @var{lb} and @var{ub} should be the same size as @var{x0}.
-## @var{options} can be set with @code{optimset}
+## @var{options} can be set with @code{optimset}.
 ## Follwing Matlab compatible options
 ## are recognized:
 ##
@@ -117,7 +117,7 @@
 ##
 ## @item jacobian
 ## m-by-n matrix, where @var{jacobian}(i,j) is the partial derivative of @var{fun(i)} with respect to @var{x(j)}
-## If @code{Jacobian} is set to "on" in @var{options} then @var{fun} must return a second argument providing a user-sepcified Jacobian otherwise, lsqnonlin approximates the Jacobian using finite differences.
+## If @code{Jacobian} is set to "on" in @var{options} then @var{fun} must return a second argument providing a user-sepcified Jacobian. Otherwise, lsqnonlin approximates the Jacobian using finite differences.
 ## @end table
 ##
 ## This function is a compatibility wrapper. It calls the more general @code{nonlin_curvefit} function internally.
@@ -134,13 +134,13 @@ function varargout = lsqcurvefit (varargin)
   TypicalX_default = 1;
 
   if (nargs == 1 && ischar (varargin{1}) && strcmp (varargin{1}, "defaults"))
-    varargout{1} = optimset ("FinDiffRelStep", [],...
-               "FinDiffType", "forward",...
-               "TypicalX", TypicalX_default,...
-               "TolFun", TolFun_default,...
-               "MaxIter", MaxIter_default,...
-               "Display", "off",...
-               "Jacobian", "off",...
+    varargout{1} = optimset ("FinDiffRelStep", [], ...
+               "FinDiffType", "forward", ...
+               "TypicalX", TypicalX_default, ...
+               "TolFun", TolFun_default, ...
+               "MaxIter", MaxIter_default, ...
+               "Display", "off", ...
+               "Jacobian", "off", ...
                "OutputFcn", {}, ...
                "Algorithm", "lm_svd_feasible");
     return;
@@ -150,7 +150,7 @@ function varargout = lsqcurvefit (varargin)
     print_usage ();
   endif
 
-   if (! isreal (varargin{2}))
+  if (! isreal (varargin{2}))
     error("Function does not accept complex inputs. Split into real and imaginary parts")
   endif
 
@@ -162,7 +162,7 @@ function varargout = lsqcurvefit (varargin)
   in_args(3:4) = varargin(3:4);
 
   if (nargs >= 6)
-     ## bounds are specified in a different way for nonlin_curvefit
+    ## bounds are specified in a different way for nonlin_curvefit
     settings = optimset ("lbound", varargin{5}(:),
                          "ubound", varargin{6}(:));
 
@@ -232,7 +232,7 @@ function varargout = lsqcurvefit (varargin)
   varargout{1} = reshape (curvefit_out{1}, row, col);
 
   if (out_args >= 2)
-    varargout{2} = sumsq (curvefit_out{2} - in_args{4}));
+    varargout{2} = sumsq (curvefit_out{2} - in_args{4});
   endif
 
   if (out_args >= 3)
@@ -311,4 +311,4 @@ endfunction
 %!  opts = optimset ("Jacobian", "on")
 %!
 %!  [c, resnorm, residual, flag, output, lambda, jacob] = ...
-%!      lsqcurvefit (myfun, p0, x, y, lb,  ub, opts)
+%!      lsqcurvefit (@ (varargin) myfun(varargin{:}), p0, x, y, lb,  ub, opts)
