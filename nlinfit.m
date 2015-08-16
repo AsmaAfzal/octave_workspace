@@ -18,7 +18,7 @@
 ## @deftypefnx {Function File} {} nlinfit (@var{X}, @var{Y}, @var{modelfun}, @var{beta0}, @var{options})
 ## @deftypefnx {Function File} {} nlinfit (@dots{}, @var{Name}, @var{Value})
 ## @deftypefnx {Function File} {[@var{beta}, @var{R}, @var{J}, @var{CovB}, @var{MSE}] =} nlinfit (@dots{})
-## Nonlinear Regression using Iteratively Reweighted Least Squares (IRLS) Method.
+## Nonlinear Regression.
 ##
 ## @example
 ## @group
@@ -91,19 +91,19 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
   MaxIter_default = 100;
   DerivStep_default = eps ^ (1/3);
 
-   if (nargs == 1 && ischar (X) && strcmp (X, "defaults"))
+  if (nargs == 1 && ischar (X) && strcmp (X, "defaults"))
     varargout{1} = statset ("DerivStep", DerivStep_default,...
-		             "TolFun", TolFun_default,...
-		             "MaxIter", MaxIter_default,...
-		             "Display", "off");
+                 "TolFun", TolFun_default,...
+                 "MaxIter", MaxIter_default,...
+                 "Display", "off");
     return;
   endif
 
-  if (nargs==6 || nargs > 7)
+  if (nargs < 4 || nargs==6 || nargs > 7)
     print_usage ();
   endif
 
-   if (! isreal (beta0))
+  if (! isreal (beta0))
     error("Function does not accept complex inputs. Split into real and imaginary parts")
   endif
 
@@ -115,36 +115,38 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
     if (isempty (varargin{1}))
       settings = struct ();
     else
-    ## Apply default values which are possibly different from those of
-    ## nonlin_curvefit
-    DerivStep = statget (varargin{1}, "DerivStep", DerivStep_default);
-    TolFun = statget (varargin{1}, "TolFun", TolFun_default);
-    MaxIter = statget (varargin{1}, "MaxIter", MaxIter_default);
-    Display = statget (varargin{1}, "Display", "off");
+      ## Apply default values which are possibly different from those of
+      ## nonlin_curvefit
+      DerivStep = statget (varargin{1}, "DerivStep", DerivStep_default);
+      TolFun = statget (varargin{1}, "TolFun", TolFun_default);
+      MaxIter = statget (varargin{1}, "MaxIter", MaxIter_default);
+      Display = statget (varargin{1}, "Display", "off");
 
-    if (! strcmpi (Display, "off"))
-      if (strcmpi (Display, "final"))
+      if (! strcmpi (Display, "off"))
+        if (strcmpi (Display, "final"))
           Display = "iter";
+        endif
       endif
-    endif
 
-    settings = optimset ("FinDiffRelStep", DerivStep,...
+      settings = optimset ("FinDiffRelStep", DerivStep,...
                            "TolFun", TolFun,...
                            "Display", Display,...
                            "MaxIter", MaxIter);
     endif
+
     if (nargs == 7)
       ## Weights are specified in a different way for nonlin_curvefit
       if (strcmpi (varargin{2}, "weights") )
-        weights = varargin{3};
+        weights = sqrt (varargin{3});
         if (size(weights) != size(Y))
-           error ("Weights should be the same size as the observed output Y");
+          error ("Weights should be the same size as the observed output Y");
         endif
         settings = optimset (settings, "weights", weights);
       else
         error ("Unsupported Name-value pair input.")
       endif
     endif
+
     in_args{5} = settings;
   endif
 
@@ -158,8 +160,8 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
 
   if (out_args >= 2)
     if (nargs == 7)
-     ## Weighted residual
-      varargout{2} = sqrt (weights).* (in_args{4} - nlinfit_out{2});
+      ## Weighted residual
+      varargout{2} = weights .* (in_args{4} - nlinfit_out{2});
     else
       varargout{2} = in_args{4} - nlinfit_out{2};
     endif
@@ -173,7 +175,7 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
     if (nargs == 7)
       ## Weighted Jacobian
       replicated_weights = repmat (weights, 1, length (in_args{2}));
-      varargout{3} = sqrt (replicated_weights) .* info.dfdp;
+      varargout{3} = replicated_weights .* info.dfdp;
     else
       varargout{3} = info.dfdp;
     endif
@@ -197,8 +199,9 @@ endfunction
 %! beta = nlinfit(xdata,ydata,modelfun,beta0);
 %! assert (beta, [1;3;2], 1e-1)
 
+
 %!demo
-%! %% modelfun = @(b, x) (b(1) + b(2) * exp(- b(3) * x));
+%! %% modelfun = @(b, x) (b(1) + b(2) * exp (- b(3) * x));
 %! %% actual value beta = [1;3;2]
 %! %% x = exponentially distributed random variable
 %! x = [3.49622; 0.33751; 1.25675; 3.66981; 0.26237; 5.51095;...
