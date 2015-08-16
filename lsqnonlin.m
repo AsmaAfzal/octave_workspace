@@ -122,6 +122,8 @@
 ## @end table
 ##
 ## This function is a compatibility wrapper. It calls the more general @code{nonlin_residmin} function internally.
+##
+## @seealso {lsqcurvefit, nonlin_residmin, nonlin_curvefit}
 ## @end deftypefn
 
 ## PKG_ADD: __all_opts__ ("lsqnonlin");

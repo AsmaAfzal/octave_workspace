@@ -121,6 +121,8 @@
 ## @end table
 ##
 ## This function is a compatibility wrapper. It calls the more general @code{nonlin_curvefit} function internally.
+##
+## @seealso {lsqnonlin, nonlin_residmin, nonlin_curvefit}
 ## @end deftypefn
 
 ## PKG_ADD: __all_opts__ ("lsqcurvefit");
@@ -294,7 +296,7 @@ endfunction
 %!  function [F,J] = myfun (p, x)
 %!    F = p(1) * exp (-p(2) * x);
 %!    if nargout > 1
-%!      J = [exp (- p(2) * x), - p(1) * x .* exp (- p(2) * x)];
+%!      J = [exp(- p(2) * x), - p(1) * x .* exp(- p(2) * x)];
 %!    endif
 %!  endfunction
 %!
