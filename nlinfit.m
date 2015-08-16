@@ -18,7 +18,7 @@
 ## @deftypefnx {Function File} {} nlinfit (@var{X}, @var{Y}, @var{modelfun}, @var{beta0}, @var{options})
 ## @deftypefnx {Function File} {} nlinfit (@dots{}, @var{Name}, @var{Value})
 ## @deftypefnx {Function File} {[@var{beta}, @var{R}, @var{J}, @var{CovB}, @var{MSE}] =} nlinfit (@dots{})
-## Nonlinear Regression using Iteratively Reweighted Least Squares (IRLS) Method. 
+## Nonlinear Regression using Iteratively Reweighted Least Squares (IRLS) Method.
 ##
 ## @example
 ## @group
@@ -29,28 +29,28 @@
 ##
 ## @var{X} is a matrix of independents, @var{Y} is the observed output and @var{modelfun} is the nonlinear regression model function.
 ## @var{modelfun} should be specified as a function handle, which accepts two inputs: an array of coefficients and an array of independents- in that order.
-## The first four input arguments must be provided with non-empty initial guess of the coefficients @var{beta0}. 
+## The first four input arguments must be provided with non-empty initial guess of the coefficients @var{beta0}.
 ## @var{Y} and @var{X} must be the same size as the vector (or matrix) returned by @var{fun}.
-## @var{options} is a structure containing estimation algorithm options. It can be set using @code{statset}. 
+## @var{options} is a structure containing estimation algorithm options. It can be set using @code{statset}.
 ## Follwing Matlab compatible options are recognized:
 ##
 ## @code{TolFun}
-##    Minimum fractional improvement in objective function in an iteration 
-##    (termination criterium). Default: 1e-6. 
+##    Minimum fractional improvement in objective function in an iteration
+##    (termination criterium). Default: 1e-6.
 ##
 ## @code{MaxIter}
 ##    Maximum number of iterations allowed. Default: 400.
 ##
 ## @code{DerivStep}
-##    Step size factor. The default is eps^(1/3) for finite differences gradient 
+##    Step size factor. The default is eps^(1/3) for finite differences gradient
 ##    calculation.
 ##
 ## @code{Display}
-##    String indicating the degree of verbosity. Default: "off". 
-##    Currently only supported values are "off" (no messages) and "iter" 
-##    (some messages after each iteration).    
+##    String indicating the degree of verbosity. Default: "off".
+##    Currently only supported values are "off" (no messages) and "iter"
+##    (some messages after each iteration).
 ##
-## Optional @var{Name}, @{Value} pair can be provided to set additional options. 
+## Optional @var{Name}, @{Value} pair can be provided to set additional options.
 ## Currently the only applicable name-value pair is 'Weights', w, where w is the array of real positive weights .
 ##
 ## Returned values:
@@ -72,13 +72,13 @@
 ## If the model Jacobian is full rank, then CovB = inv (J' * J) * MSE, where MSE is the mean-squared error.
 ##
 ## @item MSE
-## Scalar valued estimate of the variance of error term. If the model Jacobian is full rank, then MSE = (R' * R)/(N-p), 
+## Scalar valued estimate of the variance of error term. If the model Jacobian is full rank, then MSE = (R' * R)/(N-p),
 ## where N is the number of observations and p is the number of estimated coefficients.
 ## @end table
 ##
-## This function is a compatibility wrapper. It calls the more general @code{nonlin_curvefit} 
-## and @code{curvefit_stat} functions internally. 
-## 
+## This function is a compatibility wrapper. It calls the more general @code{nonlin_curvefit}
+## and @code{curvefit_stat} functions internally.
+##
 ## @end deftypefn
 
 ## PKG_ADD: __all_stat_opts__ ("nlinfit");
@@ -86,27 +86,27 @@
 function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
 
   nargs = nargin ();
-  
+
   TolFun_default = 1e-8;
   MaxIter_default = 100;
   DerivStep_default = eps ^ (1/3);
-  
+
    if (nargs == 1 && ischar (X) && strcmp (X, "defaults"))
-    varargout{1} = optimset ("DerivStep", DerivStep_default,...
+    varargout{1} = statset ("DerivStep", DerivStep_default,...
 		             "TolFun", TolFun_default,...
 		             "MaxIter", MaxIter_default,...
 		             "Display", "off");
     return;
   endif
-  
+
   if (nargs==6 || nargs > 7)
     print_usage ();
   endif
-  
+
    if (! isreal (beta0))
     error("Function does not accept complex inputs. Split into real and imaginary parts")
   endif
-  
+
   out_args = nargout ();
   varargout = cell (1, out_args);
   in_args = {modelfun, beta0(:), X, Y};
@@ -118,7 +118,7 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
     ## Apply default values which are possibly different from those of
     ## nonlin_curvefit
     DerivStep = statget (varargin{1}, "DerivStep", DerivStep_default);
-    TolFun = statget (varargin{1}, "TolFun", TolFun_default); 
+    TolFun = statget (varargin{1}, "TolFun", TolFun_default);
     MaxIter = statget (varargin{1}, "MaxIter", MaxIter_default);
     Display = statget (varargin{1}, "Display", "off");
 
@@ -127,7 +127,7 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
           Display = "iter";
       endif
     endif
-    
+
     settings = optimset ("FinDiffRelStep", DerivStep,...
                            "TolFun", TolFun,...
                            "Display", Display,...
@@ -143,17 +143,17 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
         settings = optimset (settings, "weights", weights);
       else
         error ("Unsupported Name-value pair input.")
-      endif   
+      endif
     endif
     in_args{5} = settings;
   endif
 
-  n_out = max (1, min (out_args, 2)); 
-  
+  n_out = max (1, min (out_args, 2));
+
   nlinfit_out = cell (1, n_out);
 
   [nlinfit_out{:}] =  nonlin_curvefit (in_args{:});
-  
+
   varargout{1} = nlinfit_out{1};
 
   if (out_args >= 2)
@@ -164,7 +164,7 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
       varargout{2} = in_args{4} - nlinfit_out{2};
     endif
   endif
-  
+
   if (out_args >= 3)
     info = curvefit_stat (modelfun, nlinfit_out{1}, in_args{3}, in_args{4},
                                  optimset (settings, "ret_dfdp", true,...
@@ -178,14 +178,14 @@ function varargout = nlinfit (X, Y, modelfun, beta0, varargin)
       varargout{3} = info.dfdp;
     endif
   endif
-  
+
   if (out_args >= 4)
     varargout{4} = info.covp;
   endif
 
   if (out_args >= 5)
     varargout{5} = (varargout{2}' * varargout{2}) / (length (in_args{3}) - length (in_args{2}));
-  endif 
+  endif
 endfunction
 
 %!test
@@ -203,13 +203,13 @@ endfunction
 %! %% x = exponentially distributed random variable
 %! x = [3.49622; 0.33751; 1.25675; 3.66981; 0.26237; 5.51095;...
 %!      2.11407; 1.48774; 6.22436; 2.04519];
-%! %% y_actual = modelfun(beta,x)     
+%! %% y_actual = modelfun(beta,x)
 %! y_actual = [1.0028; 2.5274; 1.2430; 1.0019; 2.7751; 1.0000;...
 %!            1.0437; 1.1531; 1.0000; 1.0502];
-%! %% y_noisy = y_actual + noise           
+%! %% y_noisy = y_actual + noise
 %! y_noisy =  [1.17891; 2.46055; 1.47400; 0.95433; 2.66687; 1.12279;...
 %!            1.10664; 1.30461; 1.11601; 0.95274];
-%! %% initial guess           
+%! %% initial guess
 %! beta0 = [2;2;2];
 %! %% weight vector
 %! weights = [5; 16; 1; 20; 12; 11; 17; 8; 11; 13];
