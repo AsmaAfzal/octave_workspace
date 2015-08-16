@@ -11,21 +11,21 @@ clear all
 % settings = optimset("GradObj","on");
 % [x,fval] = fmincon(@objfun,pin,[],[],[],[],[],[],@nonlcon)
 % 
-f = @(x) -x(1) * x(2) * x(3);
-
-A = [-1 -2 -2; ...
-      1  2  2];
-b = [0;72];
-x0 = [10;10;10];    % Starting guess at the solution
-S=-A';
-%[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
-%[x2,fval2] = nonlin_min( f, x0, optimset ("inequc",{S,b},"Algorithm","octave_sqp") )
+%f = @(x) -x(1) * x(2) * x(3);
 %
-%settings = optimset("Algorithm","octave_sqp");
-%[x,fval,cvg] = fmincon(f,x0,A,b)
+%A = [-1 -2 -2; ...
+%      1  2  2];
+%b = [0;72];
+%x0 = [10;10;10];    % Starting guess at the solution
+%S=-A';
+%%[x1,fval1] = nonlin_min( f, x0, optimset ("inequc",{S,b}) )
+%%[x2,fval2] = nonlin_min( f, x0, optimset ("inequc",{S,b},"Algorithm","octave_sqp") )
+%%
+%%%settings = optimset("Algorithm","octave_sqp");
+%[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[])
 %[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[],[],settings) 
-opts=optimset("TolFun",1e-1)
-[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[],[],opts) 
+%opts=optimset("TolFun",1e-1)
+%[x,fval,cvg] = fmincon(f,x0,A,b,[],[],[0;0;0],[],[],opts) 
 
 %***********Equality con****
 %f=@(X)-X(1)*X(2)^2*X(3)^3*X(4)^4;
@@ -61,14 +61,14 @@ opts=optimset("TolFun",1e-1)
 
 %********checking multiple ceq functions and gceq
 
-%c = @(x)[x(1)^2/9 + x(2)^2/4 - 1;
-%        x(1)^2 - x(2) - 1];
-%ceq = @(x)tanh(x(1)) - x(2);
-%nonlinfcn = @(x)deal(c(x),ceq(x));
-%%
-%obj = @(x)cosh(x(1))+sinh(x(2));
-%%opts = optimset("Algorithm","octave_sqp");
-%z = fmincon(obj,[0;0],[],[],[],[],[],[],nonlinfcn)
+c = @(x)[x(1)^2/9 + x(2)^2/4 - 1;
+        x(1)^2 - x(2) - 1];
+ceq = @(x)tanh(x(1)) - x(2);
+nonlinfcn = @(x)deal(c(x),ceq(x));
+%
+obj = @(x)cosh(x(1))+sinh(x(2));
+%opts = optimset("Algorithm","octave_sqp");
+z = fmincon(obj,[0;0],[],[],[],[],[],[],nonlinfcn)
 %z = nonlin_min(obj,[0;0],optimset("equc",{ceq},"inequc",{c},"Algorithm","octave_sqp"))
 %
 %%***********lambda****
@@ -81,7 +81,7 @@ opts=optimset("TolFun",1e-1)
 %ceq=@(X) X(1)*X(2)-8-2/3-2/9;
 %gceq=@(X)[X(2) X(1)];
 %m=-Aeq.';
-%%[x1,fval1] = nonlin_min( f, x0, optimset ("equc",{ceq,gceq},"lbound",lb,"ubound",ub) ) 
+%[x1,fval1] = nonlin_min( f, x0, optimset ("equc",{ceq,gceq},"lbound",lb,"ubound",ub) ) 
 %[x2,fval2] = nonlin_min( f, x0, optimset ("equc",{m,beq,ceq,gceq},"lbound",lb,"ubound",ub,"Algorithm","octave_sqp") ) 
 %[x,fval,flag,out,lambda,grad,hess] = fmincon(f,x0,[],[],Aeq,beq,lb,ub,@nonlcon)
 

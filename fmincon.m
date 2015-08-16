@@ -106,8 +106,8 @@ function varargout = fmincon (modelfun, x0, varargin)
 
   if (nargs == 1 && ischar (modelfun) && strcmp (modelfun, "defaults"))
     varargout{1} = optimset ("FinDiffRelStep", [],...
-              "FinDiffType", "forward",...
-                             "TypicalX", TypicalX_default,...
+               "FinDiffType", "forward",...
+               "TypicalX", TypicalX_default,...
                "TolFun", TolFun_default,...
                "TolX",[],...
                "MaxIter", MaxIter_default,...
@@ -218,6 +218,7 @@ function varargout = fmincon (modelfun, x0, varargin)
                            "TypicalX", TypicalX,
                            "MaxIter", MaxIter,
                            "Display", Display,
+                           "Algorithm", "lm_feasible",
                            "user_interaction", user_interaction);
   endif
 
@@ -302,3 +303,35 @@ endfunction
 function GCeq =  computeGCeq (nonlcon, p)
   [~, ~, ~, GCeq] = nonlcon (p);
 endfunction
+
+%!test
+%!  c = @(x)[x(1) ^ 2 / 9 + x(2) ^ 2 / 4 - 1;
+%!          x(1)^2 - x(2) - 1];
+%!  ceq = @(x) tanh (x(1)) - x(2);
+%!  nonlinfcn = @(x) deal (c(x), ceq(x));
+%!  obj = @(x) cosh (x(1)) + sinh (x(2));
+%!  z = fmincon (obj,[0;0],[],[],[],[],[],[],nonlinfcn);
+%!  assert(z, [-0.65256;-0.57339], 1e-2)
+
+%!demo
+%!  function [c,ceq,gc,gceq]=nonlcon(x)
+%!  %% Non-linear inequality constraint
+%!  c=[];
+%!  %% Non-linear equality constraint
+%!  ceq=x(1) * x(2) - 8 - 2 / 3 - 2 / 9;
+%! %% Gradient of non-linear inequality constraint
+%!  gc=[];
+%! %% Gradient of non-linear equality constraint
+%!  gceq=[x(2); x(1)];
+%!  endfunction
+%!
+%!  objf = @(x) - x(1) * x(2) ^ 2 * x(3) ^ 3 * x(4) ^ 4;
+%!  %% Initial guess
+%!  x0 = [2.5;2.5;2.5;2.5];
+%!  %% Linear equality constraints
+%!  Aeq = [1, 1, 1, 1; 1, 1, -1, -1];
+%!  beq = [10;0];
+%!  %% Bound constraints
+%!  lb = [0;0;0;0];
+%!  ub = [10;10;10;10];
+%!  [x,fval,flag,output,lambda,gradient,hessian] = fmincon(f, x0, [], [], Aeq, beq, lb, ub, @nonlcon)
