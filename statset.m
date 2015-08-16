@@ -1,18 +1,18 @@
 ## Copyright (C) 2007-2015 John W. Eaton
 ## Copyright (C) 2009 VZLU Prague
 ##
-## Octave is free software; you can redistribute it and/or modify it
+## This function is free software; you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 3 of the License, or (at
 ## your option) any later version.
 ##
-## Octave is distributed in the hope that it will be useful, but
+## This function is distributed in the hope that it will be useful, but
 ## WITHOUT ANY WARRANTY; without even the implied warranty of
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ## General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with Octave; see the file COPYING.  If not, see
+## along with this function; see the file COPYING.  If not, see
 ## <http://www.gnu.org/licenses/>.
 
 ## -*- texinfo -*-
@@ -23,10 +23,23 @@
 ## @deftypefnx {Function File} {@var{options} =} statset (@var{old}, @var{new})
 ## Create options structure for statistics functions.
 ##
-## Please see individual database functions for valid settings.
+## When called without any input or output arguments, @code{statset} prints
+## a list of all valid statistics parameters.
 ##
-## Copied from Octave (was 'optimset') (Asma Afzal <asmaafzal5@gmail.com>).
+## When called with one output and no inputs, return an options structure with
+## all valid option parameters initialized to @code{[]}.
+##
+## When called with a list of parameter/value pairs, return an options
+## structure with only the named parameters initialized.
+##
+## When the first input is an existing options structure @var{old}, the values
+## are updated from either the @var{par}/@var{val} list or from the options
+## structure @var{new}.
+##
+## Please see individual statistics functions for valid settings.
 ## @end deftypefn
+
+## Copied from Octave (was 'optimset') (Asma Afzal <asmaafzal5@gmail.com>).
 
 function retval = statset (varargin)
 
@@ -68,13 +81,12 @@ function retval = statset (varargin)
         ## Validate option.
         if (nmatch == 1)
           key = opts{find (i)};
-          ## Use correct case.
         elseif (nmatch == 0)
           warning ("statset: unrecognized option: %s", key);
         else
           fmt = sprintf ("statset: ambiguous option: %%s (%s%%s)",
                          repmat ("%s, ", 1, nmatch-1));
-          warning (fmt, key, opts{i});               
+          warning (fmt, key, opts{i});
         endif
       endif
       old.(key) = val;
@@ -97,11 +109,9 @@ endfunction
 
 %!assert (isfield (statset (), "TolFun"))
 %!assert (isfield (statset ("tolFun", 1e-3), "TolFun"))
-%!assert (statget (statset ("tolx", 1e-2), "tOLx"), 1e-2)
 
 ## Test input validation
 %!error statset ("1_Parameter")
 %!error <no defaults for function> statset ("%NOT_A_REAL_FUNCTION_NAME%")
 %!warning <statset: unrecognized option: foobar> statset ("foobar", 13);
-%!warning <statset: ambiguous option: Max> statset ("Max", 10);
 
