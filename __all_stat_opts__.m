@@ -1,17 +1,17 @@
 ## Copyright (C) 2009-2015 VZLU Prague
 ##
-## Octave is free software; you can redistribute it and/or modify it
+## This function is free software; you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 3 of the License, or (at
 ## your option) any later version.
 ##
-## Octave is distributed in the hope that it will be useful, but
+## This function is distributed in the hope that it will be useful, but
 ## WITHOUT ANY WARRANTY; without even the implied warranty of
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 ## General Public License for more details.
 ##
 ## You should have received a copy of the GNU General Public License
-## along with Octave; see the file COPYING.  If not, see
+## along with this function; see the file COPYING.  If not, see
 ## <http://www.gnu.org/licenses/>.
 
 ## -*- texinfo -*-
@@ -23,7 +23,6 @@
 ## list of possible values.
 ##
 ## Copied from Octave (was '__all_opts__') (Asma Afzal <asmaafzal5@gmail.com>).
-## @end deftypefn
 
 function names = __all_stat_opts__ (varargin)
 
