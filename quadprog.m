@@ -112,7 +112,7 @@
   if (! issquare (H))
     error ("Quadratic penalty matrix not square");
   elseif (! ishermitian (H))
-    ## warning ("qp: quadratic penalty matrix not hermitian");
+    ## warning ("quadratic penalty matrix not hermitian");
     H = (H + H')/2;
   endif
   n = rows (H);
@@ -265,7 +265,7 @@
 
   ## Now we should have the following QP:
   ##
-  ##   min_x  0.5*x'*H*x + x'*q
+  ##   min_x  0.5*x'*H*x + x'*f
   ##   s.t.   Aeq*x = beq
   ##          A*x >= b
 
