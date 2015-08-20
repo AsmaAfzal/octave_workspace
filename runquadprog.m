@@ -63,9 +63,9 @@ b =[0.5251
 Aeq = [3 5 7 9];
 beq = 4;
 lb = -0.1*ones(4,1);
-%lb(3)= -Inf;
-%lb(4)=0.3;
-ub = ones(4,1);
+lb(4)= -Inf;
+lb(2)=0.3;
+ub = 0.3*ones(4,1);
 H=C'*C;f=-C'*d;
 [x,obj,flag,op,lambda]=quadprog(H,f,A,b,Aeq,beq,lb,ub)
 %[x,obj,flag,op,lambda]=quadprog(C'*C,-C'*d,[],[],[],[],lb,ub);

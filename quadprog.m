@@ -392,32 +392,38 @@
 
   if (n_out >= 5 && exitflag == 0)
     lm_idx=1; lambda_not_ineq = [];
+    ## Pick multipliers corresponding to equality constraints first if present 
     if (nargs > 4 && (! isempty (varargin{3}) && ! isempty (varargin{4}) || count_not_ineq > 0))
       lambda.eqlin = qp_lambda(lm_idx:lm_idx + n_eq - count_not_ineq - 1);
+      ## Multipliers corresponding to too close bounds making equality 
+      ## constraints
       lambda_not_ineq = qp_lambda(lm_idx + n_eq - count_not_ineq: lm_idx + n_eq -1);
       lm_idx = lm_idx + n_eq;
     endif
-
+    ## Pick multipliers corresponding to inequality constraints if present
     if (nargs > 2 && ! isempty (varargin{1}) && ! isempty (varargin{2}))
       ineq_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ineq) - 1);
       lambda.ineqlin = ineq_tmp;
       lm_idx = lm_idx + sum (! idx_ineq);
     endif
-
+    ## Pick multipliers corresponding to lower bounds if present
     if (nargs > 6 && ! isempty (varargin{5}))
       lb_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_lb) - count_not_ineq - 1);
+      ## Take care of the position of too close and -Inf bounds
+      ## Place zeros for the corresponding multipliers.
       idx = idx_bounds_ineq & ! idx_lb;
       lambda.lower(idx) = lb_tmp;
       lambda.lower(! idx) = 0;
       lambda.lower = lambda.lower(:);
       lm_idx = lm_idx + sum (! idx_lb) - count_not_ineq;
     endif
-
+    ## Pick multipliers corresponding to upper bounds if present
     if (nargs > 7 && ! isempty (varargin{6}))
       ub_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ub) - count_not_ineq - 1);
-      idx = idx_bounds_ineq & ! idx_ub;
+      ## Take care of the position of -Inf bounds
+      ## Place the multipliers for too close bounds in the respective positions     
+      idx = idx_bounds_ineq & ! idx_ub
       lambda.upper(idx) = ub_tmp;
-      lambda.upper(! idx) = 0;
       lambda.upper(! idx_bounds_ineq) = lambda_not_ineq;
       lambda.upper = lambda.upper(:);
     endif
