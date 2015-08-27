@@ -1,0 +1,459 @@
+diff --git a/quadprog.m b/quadprog.m
+index be3637c..28608ac 100644
+--- a/quadprog.m
++++ b/quadprog.m
+@@ -93,184 +93,164 @@
+ 
+ ## PKG_ADD: __all_opts__ ("quadprog");
+ 
+- function varargout = quadprog (H, f, varargin)
++## adapted from Octaves qp.m with enhanced handling of lambda by Asma
++## Afzal <asmaafzal5@gmail.com>
++##
++## modified by Olaf Till <i7tiol@t-online.de>
++
++function varargout = quadprog (H, f, varargin)
+ 
+   if (nargin == 1 && ischar (H) && strcmp (H, "defaults"))
+     varargout{1} = optimset ("MaxIter", 200);
+     return;
+   endif
+ 
+-  nargs = nargin;
+-  n_out = nargout ();
+-  varargout = cell (1, n_out);
++  maxnargs = 10;
+ 
+-  if (nargs < 2 || nargs == 3 || nargs == 5 || nargs == 7 || nargs > 10)
++  nargs = nargin ();
++  nout = nargout ();
++
++  ## disallow, among others, incomplete pairs (matrix and vector) of
++  ## constraint arguments, but allow giving only lower bounds, since
++  ## specifying an empty matrix for upper bounds is allowed anyway
++  if (nargs < 2 || nargs == 3 || nargs == 5 || nargs > maxnargs)
+     print_usage();
+   endif
+ 
++  fname = "quadprog";
++
++  allargin = horzcat (varargin, cell (1, maxnargs)); 
++
++  [Ain, bin, Aeq, beq, lb, ub, x0, options] = allargin{:};
++
++  if (isempty (options))
++    options = struct ();
++  elseif (! isstruct (options))
++    error ("%s: options must be empty or a structure", fname);
++  endif
++
++  maxit = optimget (options, "MaxIter", 200);
++
+   ## Checking the quadratic penalty
+   if (! issquare (H))
+-    error ("Quadratic penalty matrix not square");
++    error ("%s: quadratic penalty matrix not square", fname);
+   elseif (! ishermitian (H))
+     ## warning ("quadratic penalty matrix not hermitian");
+     H = (H + H')/2;
+   endif
+   n = rows (H);
+ 
+-  ## Linear penalty.
+-  if (isempty (f))
+-    f = zeros (n, 1);
+-  elseif (numel (f) != n)
+-    error ("The linear term has incorrect length");
+-  endif
+-
+-  if (nargs > 2)
+-    A_in = varargin{1};
+-    b_in = varargin{2};
+-  else
+-    A_in = [];
+-    b_in = [];
+-  endif
++  ## Checking linear penalty (if empty it is resized to the right
++  ## dimension and filled with 0).
++  f = check_vector (f, n, fname, "linear penalty");
+ 
+-  if (nargs > 4)
+-    Aeq = varargin{3};
+-    beq= varargin{4};
+-  else
+-    Aeq = [];
+-    beq = [];
+-  endif
++  ## Checking the initial guess (if empty it is resized to the right
++  ## dimension and filled with 0).
++  x0 = check_vector (x0, n, fname, "initial guess");
+ 
+-  if (nargs > 6)
+-    lb = varargin{5};
+-    ub = varargin{6};
+-  else
+-    lb = [];
+-    ub = [];
+-  endif
++  lambda = struct ("lower", [], "upper", [], "eqlin", [], "ineqlin", []);
+ 
+-  if (nargs >= 9)
+-    x0 = varargin{7};
++  ## Equality constraint matrices
++  if (isempty (Aeq) && isempty (beq))
++    Aeq = zeros (0, n);
++    beq = zeros (0, 1);
++    n_eq = 0;
+   else
+-    x0 = [];
+-  endif
+-
+-  options = struct ();
+-
+-  if (nargs == 10)
+-    if (isstruct (varargin{8}))
+-      options = varargin{8};
++    [n_eq, n1] = size (Aeq);
++    if (n1 != n)
++      error ("%s: equality constraint matrix has incorrect column dimension",
++             fname);
+     endif
++    if (! isvector (beq) || numel (beq) != n_eq)
++      error ("%s: equality constraint matrix and vector have inconsistent dimensions",
++             fname);
++    endif
++    beq = beq(:)
+   endif
+ 
+-  maxit = optimget (options, "MaxIter", 200);
+-
+-  ## Checking the initial guess (if empty it is resized to the
+-  ## right dimension and filled with 0)
+-  if (isempty (x0))
+-    x0 = zeros (n, 1);
+-  elseif (numel (x0) != n)
+-    error ("The initial guess has incorrect length");
+-  endif
+-
+-  lambda = struct ("lower", [], "upper", [], "eqlin", [], "ineqlin", []);
+-
+   ## Inequality constraint matrices
+-  A = zeros (0, n);
+-  b = zeros (0, 1);
+-  if (! isempty (A_in) && ! isempty (b_in))
+-    [dimA_in, n1] = size (A_in);
++  if (isempty (Ain) && isempty (bin))
++    Ain = zeros (0, n);
++    bin = zeros (0, 1);
++  else
++    [n_in, n1] = size (Ain);
+     if (n1 != n)
+-      error ("Inequality constraint matrix has incorrect column dimension");
++      error ("%s: inequality constraint matrix has incorrect column dimension",
++             fname);
+     endif
+-    if (numel (b_in) != dimA_in)
+-      error ("Inequality constraint matrix and upper bound vector inconsistent");
++    if (! isvector (bin) || numel (bin) != n_in)
++      error ("%s: inequality constraint matrix and vector have inconsistent dimensions",
++             fname);
+     endif
+-    A = [A; -A_in];
+-    b = [b; -b_in];
+-    idx_ineq = isinf (b_in) & b_in < 0;
+-    lambda.ineqlin = zeros (n, 0);
++    ## change from quadprog- to __qp__-conventions
++    Ain = -Ain;
++    bin = -bin;
++    ##
++    idx_ineq = isinf (bin) & bin < 0;
+     ## Discard inequality constraints that have -Inf bounds since those
+     ## will never be active but keep the index for ordering of lambda.
+-    b(idx_ineq) = [];
+-    A(idx_ineq,:) = [];
+-  elseif (isempty (A_in) && ! isempty (b_in) || ! isempty (A_in) && isempty (b_in))
+-    error("The number of rows in A must be the same as the length of b")
+-  endif
+-  ## Equality constraint matrices
+-  if (isempty (Aeq) || isempty (beq))
+-    Aeq = zeros (0, n);
+-    beq= zeros (0, 1);
+-    n_eq = 0;
+-  else
+-    [n_eq, n1] = size (Aeq);
+-    if (n1 != n)
+-      error ("Equality constraint matrix has incorrect column dimension");
+-    endif
+-    if (numel (beq) != n_eq)
+-      error ("Equality constraint matrix and vector have inconsistent dimension");
+-    endif
+-    lambda.eqlin = zeros (n, 0);
++    bin(idx_ineq) = [];
++    Ain(idx_ineq, :) = [];
+   endif
+ 
+   ## Bound constraints
+-  n_in = 0;
+-  if (nargs > 5)
+-    if (! isempty (lb))
+-      if (numel (lb) != n)
+-        error ("Lower bound has incorrect length");
+-      elseif (isempty (ub))
+-        A = [A; eye(n)];
+-        b = [b; lb];
+-      endif
+-      idx_lb = isinf (lb) & lb < 0;
+-      lambda.lower = zeros (0, n);
++  ##
++  ## FIXME: lower bounds of -inf and upper bounds of +inf should be
++  ## removed, but this has to be coordinated with the handling of
++  ## lambda
++  if (! isempty (lb))
++    if (! isvector (lb) || numel (lb) != n)
++      error ("%s: lower bounds have incorrect dimensions", fname);
++    elseif (isempty (ub))
++      Ain = [Ain; eye(n)];
++      bin = [bin; lb];
+     endif
+-
+-   if (! isempty (ub))
+-      if (numel (ub) != n)
+-        error ("Upper bound has incorrect length");
+-      elseif (isempty (lb))
+-        A = [A; -eye(n)];
+-        b = [b; -ub];
+-      endif
+-      idx_ub = isinf (ub) & ub < 0;
+-      lambda.upper = zeros (0, n);
+-   endif
+-   count_not_ineq = 0;
+-   idx_bounds_ineq = true(n,1);
+-   if (! isempty (lb) && ! isempty (ub))
+-      rtol = sqrt (eps);
+-      A_lb =[];
+-      for i = 1:n;
+-        if (abs (lb (i) - ub(i)) < rtol*(1 + max (abs (lb(i) + ub(i)))))
+-          ## These are actually an equality constraint
+-          idx_bounds_ineq (i) = false;
+-          tmprow = zeros (1,n);
+-          tmprow(i) = 1;
+-          Aeq = [Aeq; tmprow];
+-          beq = [beq; 0.5*(lb(i) + ub(i))];
+-          n_eq = n_eq + 1;
+-        else
+-          tmprow = zeros (1,n);
+-          tmprow(i) = 1;
+-          A_lb = [A_lb; tmprow];
+-        endif
+-      endfor
+-      count_not_ineq = sum (! idx_bounds_ineq);
+-      lb = lb(idx_bounds_ineq); ub = ub(idx_bounds_ineq);
+-      A = [A; A_lb; -A_lb];
+-      b = [b; lb; -ub];
++    idx_lb = isinf (lb) & lb < 0;
++  endif
++  if (! isempty (ub))
++    if (! isvector (ub) || numel (ub) != n)
++      error ("%s: upper bounds have incorrect dimensions", fname);
++    elseif (isempty (lb))
++      Ain = [Ain; -eye(n)];
++      bin = [bin; -ub];
++    endif
++    idx_ub = isinf (ub) & ub < 0;
++  endif
++  count_not_ineq = 0;
++  idx_bounds_ineq = true (n, 1);
++  if (! isempty (lb) && ! isempty (ub))
++    rtol = sqrt (eps);
++    ## index upper and lower bounds far enough apart from each other
++    ## -- the others will be treated as equality constraints
++    idx_bounds_ineq = abs (ub - lb) >= rtol * (1 + abs (lb));
++    idx_bounds_eq = ! idx_bounds_ineq;
++    if (any (ub < lb & idx_bounds_ineq))
++      error ("%s: some upper bounds lower than lower bounds", fname);
+     endif
++    ## possibly add to equality constraints
++    Aeq = vertcat (Aeq, eye (n)(idx_bounds_eq, :));
++    beq = vertcat (beq, .5 * (lb(idx_bounds_eq, 1) ...
++                              + ub(idx_bounds_eq, 1)));
++    ## possibly add to inequality constraints
++    Ain = vertcat (Ain,
++                   eye (n)(idx_bounds_ineq, :),
++                   - eye (n)(idx_bounds_ineq, :));
++    bin = vertcat (bin,
++                   lb(idx_bounds_ineq, 1),
++                   - ub(idx_bounds_ineq, 1));
++
++    count_not_ineq = sum (idx_bounds_eq);
+   endif
+ 
++  n_eq = numel (beq)
++  n_in = numel (bin);
++
+   ## Now we should have the following QP:
+   ##
+   ##   min_x  0.5*x'*H*x + x'*f
+   ##   s.t.   Aeq*x = beq
+   ##          A*x >= b
+ 
+-  n_in = numel (b);
+-
+   ## Check if the initial guess is feasible.
+   if (isa (x0, "single") || isa (H, "single") || isa (f, "single")
+       || isa (Aeq, "single") || isa (beq, "single"))
+@@ -280,7 +260,7 @@
+   endif
+ 
+   eq_infeasible = (n_eq > 0 && norm (Aeq * x0 - beq) > rtol * (1 + abs (beq)));
+-  in_infeasible = (n_in > 0 && any (A * x0 - b < -rtol * (1 + abs (b))));
++  in_infeasible = (n_in > 0 && any (Ain * x0 - bin < -rtol * (1 + abs (bin))));
+ 
+   exitflag = 0;
+ 
+@@ -290,7 +270,8 @@
+       ## constraints.
+       if (eq_infeasible)
+         if (rank (Aeq) < n_eq)
+-          error ("Equality constraint matrix must be full row rank");
++          error ("%s: equality constraint matrix must be full row rank",
++                 fname);
+         endif
+         xbar = pinv (Aeq) * beq;
+       else
+@@ -300,8 +281,8 @@
+     ## Check if xbar is feasible with respect to the inequality
+     ## constraints also.
+     if (n_in > 0)
+-      res = A * xbar - b;
+-      if (any (res < -rtol * (1 + abs (b))))
++      res = Ain * xbar - bin;
++      if (any (res < -rtol * (1 + abs (bin))))
+         ## xbar is not feasible with respect to the inequality
+         ## constraints.  Compute a step in the null space of the
+         ## equality constraints, by solving a QP.  If the slack is
+@@ -321,11 +302,11 @@
+           ## a feasible starting point.
+           gamma = eye (n_in);
+           if (n_eq > 0)
+-            Atmp = [A*Z, gamma];
++            Atmp = [Ain*Z, gamma];
+             btmp = -res;
+           else
+-            Atmp = [A, gamma];
+-            btmp = b;
++            Atmp = [Ain, gamma];
++            btmp = bin;
+           endif
+           ctmp = [zeros(n-n_eq, 1); ones(n_in, 1)];
+           lb = [-Inf(n-n_eq,1); zeros(n_in,1)];
+@@ -358,20 +339,23 @@
+   if (exitflag == 0)
+     ## The initial (or computed) guess is feasible.
+     ## We call the solver.
+-     [x, qp_lambda, exitflag, iter] = __qp__ (x0, H, f, Aeq, beq, A, b, maxit);
++    [x, qp_lambda, exitflag, iter] = ...
++    __qp__ (x0, H, f, Aeq, beq, Ain, bin, maxit);
+ 
+   else
+     iter = 0;
+     x = x0;
+   endif
+ 
+- varargout{1} = x;
++  varargout = cell (1, nout);
++
++  varargout{1} = x;
+ 
+-  if (n_out >= 2)
++  if (nout >= 2)
+     varargout{2} = 0.5 * x' * H * x + f' * x;;
+   endif
+ 
+-  if (n_out >= 3)
++  if (nout >= 3)
+     switch (exitflag)
+       case 0
+         varargout{3} = 1;
+@@ -386,14 +370,14 @@
+     endswitch
+   endif
+ 
+-  if (n_out >= 4)
++  if (nout >= 4)
+     varargout{4}.iterations = iter;
+   endif
+ 
+-  if (n_out >= 5 && exitflag == 0)
+-    lm_idx=1; lambda_not_ineq = [];
++  if (nout >= 5 && exitflag == 0)
++    lm_idx = 1; lambda_not_ineq = [];
+     ## Pick multipliers corresponding to equality constraints first if present 
+-    if (nargs > 4 && (! isempty (varargin{3}) && ! isempty (varargin{4}) || count_not_ineq > 0))
++    if (n_eq > 0)
+       lambda.eqlin = qp_lambda(lm_idx:lm_idx + n_eq - count_not_ineq - 1);
+       ## Multipliers corresponding to too close bounds making equality 
+       ## constraints
+@@ -401,13 +385,14 @@
+       lm_idx = lm_idx + n_eq;
+     endif
+     ## Pick multipliers corresponding to inequality constraints if present
+-    if (nargs > 2 && ! isempty (varargin{1}) && ! isempty (varargin{2}))
++    if (! isempty (allargin{1}))
+       ineq_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ineq) - 1);
+       lambda.ineqlin = ineq_tmp;
+       lm_idx = lm_idx + sum (! idx_ineq);
+     endif
+     ## Pick multipliers corresponding to lower bounds if present
+-    if (nargs > 6 && ! isempty (varargin{5}))
++    if (! isempty (allargin{5}))
++      lambda.lower = zeros (n, 1);
+       lb_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_lb) - count_not_ineq - 1);
+       ## Take care of the position of too close and -Inf bounds
+       ## Place zeros for the corresponding multipliers.
+@@ -418,19 +403,33 @@
+       lm_idx = lm_idx + sum (! idx_lb) - count_not_ineq;
+     endif
+     ## Pick multipliers corresponding to upper bounds if present
+-    if (nargs > 7 && ! isempty (varargin{6}))
++    if (! isempty (allargin{6}))
++      lambda.upper = zeros (n, 1);
+       ub_tmp = qp_lambda(lm_idx:lm_idx + sum (! idx_ub) - count_not_ineq - 1);
+       ## Take care of the position of -Inf bounds
+       ## Place the multipliers for too close bounds in the respective positions     
+-      idx = idx_bounds_ineq & ! idx_ub
++      idx = idx_bounds_ineq & ! idx_ub;
+       lambda.upper(idx) = ub_tmp;
+       lambda.upper(! idx_bounds_ineq) = lambda_not_ineq;
+       lambda.upper = lambda.upper(:);
+     endif
+-    varargout{5}.lower = lambda.lower;
+-    varargout{5}.upper = lambda.upper;
+-    varargout{5}.eqlin = lambda.eqlin;
+-    varargout{5}.ineqlin = lambda.ineqlin;
++    varargout{5} = lambda;
++  endif
++
++endfunction
++
++function vec = check_vector (vec, n, fname, vecname)
++
++  if (isempty (vec))
++    vec = zeros (n, 1);
++  else
++    if (! isvector (vec))
++      error ("%s: %s must be a vector", fname, vecname);
++    endif
++    if (numel (vec) != n)
++      error ("%s: %s has incorrect length", fname, vecname);
++    endif
++    vec = vec(:);
+   endif
+ 
+ endfunction
+@@ -467,4 +466,4 @@ endfunction
+ %!  ub = ones(4,1);
+ %!  H = C' * C;
+ %!  f = -C' * d;
+-%!  [x, obj, flag, output, lambda]=quadprog (H, f, A, b, Aeq, beq, lb, ub)
+\ No newline at end of file
++%!  [x, obj, flag, output, lambda]=quadprog (H, f, A, b, Aeq, beq, lb, ub)
