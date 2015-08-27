@@ -65,6 +65,7 @@ beq = 4;
 lb = -0.1*ones(4,1);
 lb(4)= -Inf;
 lb(2)=0.3;
+ub(4)=Inf;
 ub = 0.3*ones(4,1);
 H=C'*C;f=-C'*d;
 [x,obj,flag,op,lambda]=quadprog(H,f,A,b,Aeq,beq,lb,ub)
