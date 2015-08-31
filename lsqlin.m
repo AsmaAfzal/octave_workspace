@@ -15,9 +15,7 @@
 ## <http://www.gnu.org/licenses/>.
 
 ## -*- texinfo -*-
-## @deftypefn {Function File} {} lsqlin (@var{C}, @var{d})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b})
-## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b}, @var{Aeq}, @var{beq})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub}, @var{x0})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub}, @var{x0}, @var{options})
