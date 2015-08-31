@@ -202,4 +202,4 @@ endfunction
 %!  %% Bound constraints
 %!  lb = -0.1*ones(4,1);
 %!  ub = ones(4,1);
-%!  [x, resnorm, residual, flag, output, lambda] = quadprog (C, d, A, b, Aeq, beq, lb, ub);
+%!  [x, resnorm, residual, flag, output, lambda] = lsqlin (C, d, A, b, Aeq, beq, lb, ub);
