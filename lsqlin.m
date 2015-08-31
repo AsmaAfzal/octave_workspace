@@ -112,12 +112,9 @@ function varargout = lsqlin (C, d, A, b, varargin)
   if (nargs < 4 || nargs > 4 && nargs < 8 || nargs > maxnargs)
     print_usage();
   endif
-
-  in_args = horzcat (C, d, A, b, varargin);
-
+  
   ## do the argument mapping
-  in_args{1} = C' * C;
-  in_args{2} = real (- C' * d);
+  in_args = horzcat (C' * C, real (- C' * d), A, b, varargin);
 
   varargout = cell (1, n_out);
 
