@@ -15,7 +15,7 @@
 ## <http://www.gnu.org/licenses/>.
 
 ## -*- texinfo -*-
-## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b})
+## @deftypefn {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub}, @var{x0})
 ## @deftypefnx {Function File} {} lsqlin (@var{C}, @var{d}, @var{A}, @var{b}, @var{Aeq}, @var{beq}, @var{lb}, @var{ub}, @var{x0}, @var{options})
@@ -23,7 +23,7 @@
 ## Solve the linear least squares program
 ## @example
 ## @group
-## min 0.5 EuclidianNorm(C*x - d)
+## min 0.5 sumsq(C*x - d)
 ## x
 ## @end group
 ## @end example
@@ -52,7 +52,7 @@
 ## Position of minimum.
 ##
 ## @item resnorm
-## Scalar value of objective as EuclidianNorm(C*x - d).
+## Scalar value of objective as sumsq(C*x - d).
 ##
 ## @item residual
 ## Vector of solution residuals C*x - d.
@@ -74,7 +74,7 @@
 ##
 ## @item output
 ## Structure with additional information, currently the only field is
-## @code{iteratios}, the number of used iterations.
+## @code{iterations}, the number of used iterations.
 ##
 ## @item lambda
 ## Structure containing Lagrange multipliers corresponding to the
@@ -82,15 +82,10 @@
 ##
 ## @end table
 ##
-## This function is a compatability wrapper. It calls a more general function
-## @code{quadprog} internally.
+## This function calls the more general function @code{quadprog}
+## internally.
 ##
-## @c Will be cut out in optims info file and replaced with the same
-## @c refernces explicitely there, since references to core Octave
-## @c functions are not automatically transformed from here to there.
-## @c BEGIN_CUT_TEXINFO
-## @seealso{qp, quadprog}
-## @c END_CUT_TEXINFO
+## @seealso{quadprog}
 ## @end deftypefn
 
 ## PKG_ADD: __all_opts__ ("lsqlin");
@@ -114,39 +109,30 @@ function varargout = lsqlin (C, d, A, b, varargin)
   endif
   
   ## do the argument mapping
-  in_args = horzcat (C' * C, real (- C' * d), A, b, varargin);
+  Ch = C';
+  in_args = horzcat (Ch * C, real (- Ch * d), A, b, varargin);
 
   varargout = cell (1, n_out);
 
   if (n_out > 2)
+    ## We don't need to know if original n_out was 3 or 2.
     n_out --;
   endif
 
-  quadprog_out = cell(1, n_out);
+  quadprog_out = cell (1, max (n_out, 1));
 
   [quadprog_out{:}] = quadprog (in_args{:});
 
   varargout{1} = quadprog_out{1};
 
-  if (n_out >= 1)
-    varargout{2} = sumsq (C * quadprog_out{1} - d);
-  endif
-
   if (n_out >= 2)
+    ## The residuals have to be calculated as intermediate values
+    ## anyway, so compute varargout{3} even if not requested.
     varargout{3} = C * quadprog_out{1} - d;
+    varargout{2} = sumsq (varargout{3});
   endif
 
-  if (n_out >= 3)
-    varargout{4} = quadprog_out{3};
-  endif
-
-  if (n_out >= 4)
-    varargout{5} = quadprog_out{4};
-  endif
-
-  if (n_out >= 5)
-    varargout{6} = quadprog_out{5};
-  endif
+  varargout(4:end) = quadprog_out(3:end);
 endfunction
 
 %!test
@@ -202,4 +188,4 @@ endfunction
 %!  %% Bound constraints
 %!  lb = -0.1*ones(4,1);
 %!  ub = ones(4,1);
-%!  [x, resnorm, residual, flag, output, lambda] = lsqlin (C, d, A, b, Aeq, beq, lb, ub);
+%!  [x, resnorm, residual, flag, output, lambda] = lsqlin (C, d, A, b, Aeq, beq, lb, ub)
