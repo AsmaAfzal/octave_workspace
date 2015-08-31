@@ -119,7 +119,11 @@ function varargout = quadprog (H, f, varargin)
 
   fname = "quadprog";
 
+<<<<<<< HEAD
   allargin = horzcat (varargin, cell (1, maxnargs - nargs));
+=======
+  allargin = horzcat (varargin, cell (1, maxnargs));
+>>>>>>> origin/master
 
   [Ain, bin, Aeq, beq, lb, ub, x0, options] = allargin{:};
 
@@ -195,8 +199,13 @@ function varargout = quadprog (H, f, varargin)
 
   ## Bound constraints
   ##
+<<<<<<< HEAD
   ## Discard lower bounds of -inf and upper bounds of +inf since those
   ## will never be active.
+=======
+  ## lower bounds of -inf and upper bounds of +inf should be
+  ## removed
+>>>>>>> origin/master
   if (! isempty (lb))
     if (! isvector (lb) || numel (lb) != n)
       error ("%s: lower bounds have incorrect dimensions", fname);
@@ -401,7 +410,11 @@ function varargout = quadprog (H, f, varargin)
       lambda.lower(idx) = lb_tmp;
       lambda.lower(idx_bounds_eq) = lambda_not_ineq;
       lambda.lower = lambda.lower(:);
+<<<<<<< HEAD
       lm_idx += sum (idx_lb) - count_not_ineq;
+=======
+      lm_idx = lm_idx + sum (idx_lb) - count_not_ineq;
+>>>>>>> origin/master
     endif
     ## Pick multipliers corresponding to upper bounds if present
     if (! isempty (allargin{6}))
@@ -411,7 +424,11 @@ function varargout = quadprog (H, f, varargin)
       ## Place the multipliers for too close bounds in the respective positions
       idx = idx_bounds_ineq & idx_ub;
       lambda.upper(idx) = ub_tmp;
+<<<<<<< HEAD
       ## lambda.upper(! idx) = 0;
+=======
+      lambda.upper(! idx) = 0;
+>>>>>>> origin/master
       lambda.upper = lambda.upper(:);
     endif
     varargout{5} = lambda;
